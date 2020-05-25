@@ -1,0 +1,35 @@
+#+TITLE: SFS
+
+* Introduction
+SFS is an interface to Recoll for Emacs. Recoll search queries are forwarded to a search service, and the results are used to populate a dired buffer.
+
+* Search Queries
+Recoll search queries are fully documented [here](https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.html). Basically though, you can search for keywords individually, like google:
+
+#+begin_src
+Query: keywords to look for in the index
+#+end_src
+Or clustered phrases:
+#+begin_src
+Query: "keywords to look" for in "the index"
+#+end_src
+Recoll also recognizes certain field names:
+#+begin_src
+Query: filename:test OR filename:bla ext:c dir:home -dir:bin size<10000 date:2001-03-01/2021-05-01
+#+end_src
+So this gives me files with test or bla in the filename, .c files, home somewhere in the path, bin nowhere in the path, files less than 10000 bytes, and dated between 2001-03-01 and 2021-05-01.
+
+The full list of field names:
+** title, subject or caption are synonyms which specify data to be searched for in the document title or subject.
+
+** author or from for searching the documents originators.
+
+** recipient or to for searching the documents recipients.
+
+** keyword for searching the document-specified keywords (few documents actually have any).
+
+** filename for the document's file name. This is not necessarily set for all documents: internal documents contained inside a compound one (for example an EPUB section) do not inherit the container file name any more, this was replaced by an explicit field (see next). Sub-documents can still have a specific filename, if it is implied by the document format, for example the attachment file name for an email attachment.
+
+** containerfilename. This is set for all documents, both top-level and contained sub-documents, and is always the name of the filesystem directory entry which contains the data. The terms from this field can only be matched by an explicit field specification (as opposed to terms from filename which are also indexed as general document content). This avoids getting matches for all the sub-documents when searching for the container file name.
+
+** ext specifies the file name extension (Ex: ext:html)
