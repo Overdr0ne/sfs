@@ -2,13 +2,13 @@
 ;;
 ;; Copyright (C) 2020
 ;;
-;; Author:  <http://github/sam>
+;; Author:  <http://github/Overdr0ne>
 ;; Maintainer:  <scmorris.dev@gmail.com>
 ;; Created: May 23, 2020
 ;; Modified: May 23, 2020
 ;; Version: 0.0.1
 ;; Keywords:
-;; Homepage: https://github.com/sam/sfs
+;; Homepage: https://github.com/Overdr0ne/sfs
 ;; Package-Requires: ((emacs 26.3) (cl-lib "0.5"))
 ;;
 ;; This file is not part of GNU Emacs.
@@ -21,47 +21,48 @@
 
 (require 'dbus)
 
-(defun sfs (query)
-  (interactive "sQuery: ")
-  (setq rslt (dbus-call-method
+(defun sfs-call (method &rest args)
+  "Send METHOD to the SFS python server with optional ARGS."
+  (dbus-call-method
    :session
-   "com.example.SampleService"
-   "/SomeObject"
-   "com.example.SampleInterface"
-   "query"
-   query))
-  (setq urls (mapcar 'car rslt))
-  (setq urls (remove-if-not (lambda (file) (file-exists-p file)) urls))
-  (dired urls)
-  )
+   "com.sfs.SearchService"
+   "/SFS"
+   "com.sfs.SearchInterface"
+   method
+   args))
 
-(defun sfs-simple-any (query)
+(defun sfs (queryStr)
+  "Run Recoll QUERYSTR and display the results in dired if they exist.
+QUERY is a search string conforming to the Recoll Query Language."
   (interactive "sQuery: ")
-  (setq rslt (dbus-call-method
-   :session
-   "com.example.SampleService"
-   "/SomeObject"
-   "com.example.SampleInterface"
-   "query"
-   query))
-  (setq urls (mapcar 'car rslt))
-  (setq urls (remove-if-not (lambda (file) (file-exists-p file)) urls))
-  (dired urls)
-  )
+  (let ((rslt nil)
+        (urls nil))
+    (setq rslt (dbus-call-method
+                :session
+                "com.sfs.SearchService"
+                "/SFS"
+                "com.sfs.SearchInterface"
+                "Query"
+                queryStr))
+    (setq urls (mapcar 'car rslt))
+    (setq urls (remove-if-not (lambda (file) (file-exists-p file)) urls))
+    (dired urls)))
 
-(defun sfs-simple-all (query)
-  (interactive "sQuery: ")
-  (setq rslt (dbus-call-method
+(defun sfs-exit ()
+  "Exit SFS Recoll server."
+  (interactive)
+  (dbus-call-method
    :session
-   "com.example.SampleService"
-   "/SomeObject"
-   "com.example.SampleInterface"
-   "query"
-   query))
-  (setq urls (mapcar 'car rslt))
-  (setq urls (remove-if-not (lambda (file) (file-exists-p file)) urls))
-  (dired urls)
-  )
+   "com.sfs.SearchService"
+   "/SFS"
+   "com.sfs.SearchInterface"
+   "Exit"))
+
+(start-process
+ "recoll-server"
+ "*recoll-server*"
+ "python"
+ (concat (file-name-directory load-file-name) "service.py"))
 
 (provide 'sfs)
 ;;; sfs.el ends here
