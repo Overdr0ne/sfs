@@ -1,11 +1,12 @@
+;;; sfs --- Search File System: A search engine for your filesystem
 ;;; sfs.el -*- lexical-binding: t; -*-
 ;;
 ;; Copyright (C) 2020
 ;;
 ;; Author:  <http://github/Overdr0ne>
-;; Maintainer:  <scmorris.dev@gmail.com>
+;; Maintainer:  <http://github/Overdr0ne>
 ;; Created: May 23, 2020
-;; Modified: May 23, 2020
+;; Modified: May 24, 2020
 ;; Version: 0.0.1
 ;; Keywords:
 ;; Homepage: https://github.com/Overdr0ne/sfs
@@ -32,8 +33,8 @@
    args))
 
 (defun sfs (queryStr)
-  "Run Recoll QUERYSTR and display the results in dired if they exist.
-QUERY is a search string conforming to the Recoll Query Language."
+  "Query the Recoll database and display the results in dired.
+QUERYSTR is a search string conforming to the Recoll Query Language."
   (interactive "sQuery: ")
   (let ((rslt nil)
         (urls nil))
