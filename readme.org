@@ -37,6 +37,9 @@ The full list of field names for convenience:
 - *type* or *rclcat* for specifying the category (as in text/media/presentation/etc.)
 
 * Todo
-- Display Extended attributes in dired, in particular for Linux.
-- Plumb the text preview info from Recoll into dired for each file, sorta like Google
+- Display extended attributes in dired, in particular for Linux.
+- Add a fancy start page with lots of suggested tag buttons that can be conveniently added and removed, sorta like a root directory.
+- Plumb the text preview info from Recoll into dired for keyword searches, sorta like Google.
 - Iterative filtering of results so it feels more like you are navigating your file-system, but non-hierarchically!
+
+- Cross-platform...
