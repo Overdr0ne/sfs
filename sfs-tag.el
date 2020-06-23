@@ -46,8 +46,21 @@
   "Interactively tag the file at POINT using extended attributes."
   (interactive)
   (ivy-read "Tag: " (sfs-tag-collect-tags)
-			;; :action '(lambda (x) (print x))))
 			:action 'sfs-tag-set-action))
+
+(defun sfs-tag-collect-dump ()
+  "Collect existing tags for file at POINT."
+  (let (attr)
+	(setq attr (-> (format "getfattr --absolute-names -d %s"
+						   (shell-quote-argument (dired-get-filename)))
+				   (shell-command-to-string)))
+	(setq attr (dired-replace-in-string "#.*" "" attr))
+	(split-string attr)))
+
+(defun sfs-tag-get ()
+  "Get all tag info for file at POINT using extended attributes."
+  (interactive)
+  (ivy-read "Tag: " (sfs-tag-collect-dump)))
 
 (provide 'sfs-tag)
 ;;; sfs-tag.el ends here
