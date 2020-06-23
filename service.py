@@ -15,9 +15,8 @@ class DemoException(dbus.DBusException):
 
 class SFS(dbus.service.Object):
     @dbus.service.method("com.sfs.SearchInterface",
-                         in_signature='s', out_signature='a(ss)')
+                         in_signature='s', out_signature='aa{ss}')
     def Query(self, queryStr):
-        # print(str(queryStr))
         db = recoll.connect()
         queryObj = db.query()
         nres = queryObj.execute(queryStr)
@@ -25,9 +24,19 @@ class SFS(dbus.service.Object):
         rtn = []
         for doc in results:
             doc.url = str(doc.url).replace('file://','')
-            print("%s %s" % (doc.url, doc.title))
-            rtn.append((doc.url, doc.title))
+            dic = {}
+            for key in doc.keys():
+                dic[key] = doc[key]
+            rtn.append(dic)
         return rtn
+
+    @dbus.service.method("com.sfs.SearchInterface",
+                         in_signature='', out_signature='aa{ss}')
+    def Sam(self):
+        # return [["Hello", " Sam", " from example-service.py"], ["with unique name",
+        #         session_bus.get_unique_name()]]
+        return [{"first": "Hello Dict", "second": " from example-service.py"},
+                {"first": "asdf", "second": ";lkj", "third": "qwerpoiu"}]
 
     @dbus.service.method("com.sfs.SearchInterface",
                          in_signature='', out_signature='')
