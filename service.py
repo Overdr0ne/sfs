@@ -31,14 +31,6 @@ class SFS(dbus.service.Object):
         return rtn
 
     @dbus.service.method("com.sfs.SearchInterface",
-                         in_signature='', out_signature='aa{ss}')
-    def Sam(self):
-        # return [["Hello", " Sam", " from example-service.py"], ["with unique name",
-        #         session_bus.get_unique_name()]]
-        return [{"first": "Hello Dict", "second": " from example-service.py"},
-                {"first": "asdf", "second": ";lkj", "third": "qwerpoiu"}]
-
-    @dbus.service.method("com.sfs.SearchInterface",
                          in_signature='', out_signature='')
     def RaiseException(self):
         raise QueryException('The RaiseException method does what you might '
