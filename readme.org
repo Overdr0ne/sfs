@@ -5,6 +5,9 @@ SFS is an interface to Recoll for Emacs. Recoll search queries are forwarded to 
 
 [[./sfs-demo.gif]]
 
+* Indexing
+Before you can search, you must index your filesystem with the program *recollindex*. There are a number of options here, but basically you can do this periodically(https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.INDEXING.PERIODIC.html), or in real time, updating the index every time a file is modified(https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.INDEXING.MONITOR.html)!
+I simply used *recollindex* initially without options to build the inital index, then put *recollindex -m* in my .xinitrc to monitor changes.
 * Search Queries
 Recoll search queries are fully documented [here](https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.html). The syntax is very similar to an internet search engine.
 
