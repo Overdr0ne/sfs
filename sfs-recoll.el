@@ -68,7 +68,7 @@
 	(ivy-read "Find Property: " entry
 			  :action #'(lambda (a) (progn
 								 (kill-new (cdr a))
-								 (print (concat (cdr a) " copied to kill-ring.")))))))
+								 (print (concat "Entry\n---\n" (cdr a) "\n---\ncopied to kill-ring.")))))))
 
 (defun sfs-recoll-build-dired-index (db)
   "Build an alist for the DB using the file url as key."
