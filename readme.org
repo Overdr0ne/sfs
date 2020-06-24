@@ -1,14 +1,25 @@
 #+TITLE: SFS (Search File System)
 
 * Introduction
-SFS is an interface to Recoll for Emacs. Recoll search queries are forwarded to a search service, and the results are used to populate a dired buffer.
+SFS is a collection of inter-operating tools to make accessing and organizing your data faster and more ergonomic.
+* sfs-recoll
+sfs-recoll is an interface to Recoll for Emacs. Recoll search queries are forwarded to a search service, and the results are used to populate a dired buffer.
 
 [[./sfs-demo.gif]]
 
-* Indexing
+** Indexing
 Before you can search, you must index your filesystem with the program *recollindex*. There are a number of options here, but basically you can do this periodically(https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.INDEXING.PERIODIC.html), or in real time, updating the index every time a file is modified(https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.INDEXING.MONITOR.html)!
 I simply used *recollindex* initially without options to build the inital index, then put *recollindex -m* in my .xinitrc to monitor changes.
-* Search Queries
+** Search Queries
+Run a search in emacs simply with:
+#+begin_src
+sfs-recoll
+#+end_src
+Get metadata with either
+#+begin_src
+sfs-recoll
+#+end_src
+
 Recoll search queries are fully documented [here](https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.html). The syntax is very similar to an internet search engine.
 
 You can search for keywords individually:
@@ -38,11 +49,17 @@ The full list of field names for convenience:
 - *date* for searching or filtering on dates.
 - *mime* or *format* for specifying the MIME type.
 - *type* or *rclcat* for specifying the category (as in text/media/presentation/etc.)
+* sfs-tags
+sfs-tags is a set of utilities for tagging your data, primarily unix files using extended attributes. In a dired directory, tag the file at point with
+#+begin_src
+sfs-tag-set
+#+end_src
+and dump the tag info with
+#+begin_src
+sfs-tag-get
+#+end_src
 
 * Todo
-- Display extended attributes in dired, in particular for Linux.
-- Add a fancy start page with lots of suggested tag buttons that can be conveniently added and removed, sorta like a root directory.
-- Plumb the text preview info from Recoll into dired for keyword searches, sorta like Google.
+- Add a fancy start page with lots of suggested tag buttons, search history, help commands, etc. that can be conveniently added and removed and composed, sorta like a root directory, model it a bit like magit with really short keybindings.
 - Iterative filtering of results so it feels more like you are navigating your file-system, but non-hierarchically!
-
 - Cross-platform...
