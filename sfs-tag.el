@@ -19,6 +19,8 @@
 ;;
 ;;; Code:
 
+(require 'ivy)
+
 (defun sfs-tag-collect-tags ()
   "Collect existing tags for file at POINT."
   (let (attr)

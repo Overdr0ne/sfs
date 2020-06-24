@@ -21,6 +21,7 @@
 ;;; Code:
 
 (require 'dbus)
+(require 'ivy)
 
 (defun sfs-recoll-get-field (field aList)
   "Utility function to get FIELD from ALIST."
