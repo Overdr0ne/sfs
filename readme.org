@@ -7,6 +7,7 @@ Install the python dependencies:
 #+begin_src
 sudo pip3 install dbus-python PyGObject
 #+end_src
+You will also need to install Recoll, go [[https://www.lesbonscomptes.com/recoll/download.html][here]].
 * sfs-recoll
 sfs-recoll is an interface to Recoll for Emacs. Recoll search queries are forwarded to a search service, and the results are used to populate a dired buffer.
 
