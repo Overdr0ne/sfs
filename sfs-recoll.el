@@ -118,7 +118,7 @@ QUERYSTR is a search string conforming to the Recoll Query Language."
 (start-process
  "recoll-server"
  "*recoll-server*"
- "python"
+ "python3"
  (concat (file-name-directory load-file-name) "service.py"))
 
 (provide 'sfs-recoll)
