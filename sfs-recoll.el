@@ -20,8 +20,13 @@
 ;;
 ;;; Code:
 
+(require 'sfs)
 (require 'dbus)
 (require 'ivy)
+(require 'dired)
+
+(defvar dbIndex nil)
+(make-variable-buffer-local 'dbIndex)
 
 (defun sfs-recoll-get-field (field aList)
   "Utility function to get FIELD from ALIST."
@@ -47,37 +52,25 @@
                     dbInfo))
     (reduce #'concat infoStrs)))
 
-(defun sfs-minibuffer-hook (str)
-  (let ((buffer (get-buffer-create " *Minibuf*")))
+(defun sfs-display-info-hook (entry)
+  (let ((buffer (get-buffer-create " *Minibuf*")) str)
+    (setq str (sfs-recoll-build-tooltip entry))
     (with-current-buffer buffer
       (visual-line-mode 1)
       (auto-fill-mode 1)
       (erase-buffer)
       (insert str)
-      ;; (display-buffer buffer
-      ;;                 '(display-buffer-below-selected
-      ;;                   . ((window-height . fit-window-to-buffer))))
       (display-buffer buffer)))
   (select-window (get-mru-window)))
-
-(defun sfs-minibuffer ()
-  "Display a tooltip showing metadata about the file at POINT."
-  (interactive)
-  (let (entry str)
-    (setq entry (assoc (dired-get-filename) dbIndex))
-    (setq str (sfs-recoll-build-tooltip entry))
-    (minibuffer-with-setup-hook
-        (lambda () (sfs-minibuffer-hook str))
-      (read-string "Enter: "))))
 
 (defun sfs-display-info ()
   "Display a tooltip showing metadata about the file at POINT."
   (interactive)
-  (let (entry str)
+  (let (entry)
     (setq entry (assoc (dired-get-filename) dbIndex))
-    (setq str (sfs-recoll-build-tooltip entry))
-    (sfs-minibuffer)
-    ))
+    (minibuffer-with-setup-hook
+        (lambda () (sfs-display-info-hook entry))
+      (read-string "Enter: "))))
 
 (defmacro minibuffer-quit-and-run (&rest body)
   "Quit the minibuffer and run BODY afterwards."
@@ -89,17 +82,21 @@
                     ,@body))
      (minibuffer-keyboard-quit)))
 
-(defun sfs-dired-next-line () (interactive)
-       "Go to next line, and display file info in minibuffer."
-       (minibuffer-quit-and-run
-        (dired-next-line 1)
-        (sfs-display-info)))
+(defun sfs-dired-next-line ()
+  (interactive)
+  "Go to next line, and display file info in minibuffer."
+  (minibuffer-quit-and-run
+   (dired-next-line 1)
+   (sfs-display-info)))
+;; (substitute-key-definition 'dired-next-line 'sfs-dired-next-line dired-mode-map)
 
-(defun sfs-dired-previous-line () (interactive)
-       "Go to previous line, and display file info in minibuffer."
-       (minibuffer-quit-and-run
-        (dired-previous-line 1)
-        (sfs-display-info)))
+(defun sfs-dired-previous-line ()
+  (interactive)
+  "Go to previous line, and display file info in minibuffer."
+  (minibuffer-quit-and-run
+   (dired-previous-line 1)
+   (sfs-display-info)))
+;; (substitute-key-definition 'dired-previous-line 'sfs-dired-previous-line dired-mode-map)
 
 (defun sfs-recoll-tooltip ()
   "Display a tooltip showing metadata about the file at POINT."
@@ -123,8 +120,8 @@
           (-> (dired-get-filename)
              (assoc dbIndex)
              (sfs-recoll-get-ivy-alist)))
-    (select-window (get-mru-window))
     (ivy-read "Find Property: " entry
+              :caller 'sfs-recoll-dired-ivy
               :action
               #'(lambda (a) (progn
                          (kill-new (cdr a))
@@ -161,8 +158,8 @@ QUERYSTR is a search string conforming to the Recoll Query Language."
     (setq urls (sfs-recoll-collect-fields '("url") db))
     (setq sfs-recollBuf (dired urls))
     (set-buffer sfs-recollBuf)
-    (make-variable-buffer-local 'dbIndex)
-    (setq dbIndex index)))
+    (setq dbIndex index)
+    (sfs-mode)))
 
 (defun sfs-recoll-exit ()
   "Exit SFS Recoll server."
