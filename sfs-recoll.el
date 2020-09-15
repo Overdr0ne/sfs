@@ -20,10 +20,14 @@
 ;;
 ;;; Code:
 
-(require 'sfs)
 (require 'dbus)
 (require 'ivy)
 (require 'dired)
+
+(define-minor-mode sfs-dired-mode
+  "Get your foos in the right places."
+  :lighter " sfs-dired"
+  :keymap (make-sparse-keymap))
 
 (defvar dbIndex nil)
 (make-variable-buffer-local 'dbIndex)
@@ -34,18 +38,22 @@
 
 (defun sfs-recoll-get-fields (fields aList)
   "Utility function to get FIELDS from ALIST."
-  (mapcar #'(lambda (field) (sfs-recoll-get-field field aList)) fields))
+  (mapcar #'(lambda (field) (sfs-recoll-get-field field aList))
+          fields))
 
 (defun sfs-recoll-collect-fields (fields db)
   "Collect data FIELDS from DB."
-  (mapcar #'(lambda (entry) (car (sfs-recoll-get-fields fields entry))) db))
+  (mapcar #'(lambda (entry) (car (sfs-recoll-get-fields fields entry)))
+          db))
 
 (defun sfs-recoll-build-tooltip (dbEntry)
   "Build tooltip string from DBENTRY."
   (let ((dbInfo nil)
         (infoStrs nil))
     (setq dbInfo (cdr dbEntry))
-    (setq dbInfo (remove-if #'(lambda (field) (string-empty-p (cadr field))) dbInfo))
+    (setq dbInfo
+          (remove-if #'(lambda (field) (string-empty-p (cadr field)))
+                     dbInfo))
     (setq infoStrs (mapcar
                     #'(lambda (field)
                         (concat (car field) ": " (cadr field) "\n"))
@@ -109,8 +117,12 @@
   "Build alist for ivy DBENTRY."
   (let (dbInfo infoStrs)
     (setq dbInfo (cdr dbEntry))
-    (setq dbInfo (remove-if #'(lambda (field) (string-empty-p (cadr field))) dbInfo))
-    (setq infoStrs (mapcar #'(lambda (field) (cons (concat (car field) ": " (cadr field)) (cadr field))) dbInfo))))
+    (setq dbInfo
+          (remove-if #'(lambda (field) (string-empty-p (cadr field)))
+                     dbInfo))
+    (setq infoStrs
+          (mapcar #'(lambda (field) (cons (concat (car field) ": " (cadr field)) (cadr field)))
+                  dbInfo))))
 
 (defun sfs-recoll-dired-ivy ()
   "Operate on file metadata at POINT."
@@ -129,7 +141,8 @@
 
 (defun sfs-recoll-build-dired-index (db)
   "Build an alist for the DB using the file url as key."
-  (mapcar #'(lambda (entry) (cons (sfs-recoll-get-field "url" entry) entry)) db))
+  (mapcar #'(lambda (entry) (cons (sfs-recoll-get-field "url" entry) entry))
+          db))
 
 (defun sfs-recoll-call (method &rest args)
   "Send METHOD to the SFS python server with optional ARGS."
@@ -153,13 +166,17 @@ QUERYSTR is a search string conforming to the Recoll Query Language."
                  "com.sfs.SearchInterface"
                  "Query"
                  queryStr))
-    (setq db (remove-if-not #'(lambda (entry) (file-exists-p (sfs-recoll-get-field "url" entry))) rawDB))
-    (setq index (sfs-recoll-build-dired-index db))
-    (setq urls (sfs-recoll-collect-fields '("url") db))
-    (setq sfs-recollBuf (dired urls))
-    (set-buffer sfs-recollBuf)
-    (setq dbIndex index)
-    (sfs-mode)))
+    (if rawDB
+        (progn (setq db
+                     (remove-if-not #'(lambda (entry) (file-exists-p (sfs-recoll-get-field "url" entry)))
+                                    rawDB))
+               (setq index (sfs-recoll-build-dired-index db))
+               (setq urls (sfs-recoll-collect-fields '("url") db))
+               (setq sfs-recollBuf (dired urls))
+               (set-buffer sfs-recollBuf)
+               (setq dbIndex index)
+               (sfs-dired-mode) )
+      (message "SFS: Couldn't find any results for your search..."))))
 
 (defun sfs-recoll-exit ()
   "Exit SFS Recoll server."
