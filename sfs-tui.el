@@ -21,188 +21,253 @@
 
 (require 'sfs-recoll)
 (require 'dash)
+(require 'wid-edit)
+(require 'general)
 
 ;;; shared stuff
-(defvar sfs-favs nil)
+(defun sfs--queries-or (query-list)
+  "Create ORed query string from QUERY-LIST."
+  (string-join query-list " OR "))
+
+(defun sfs-split-and-prefix (prefix query)
+  "Split the QUERY on space, and prepend the provided PREFIX to each."
+  (mapcar #'(lambda (str)
+              (concat prefix ":" str))
+          (split-string query)))
+
+(defvar sfs--collection-favs '())
+
+(defun sfs--collection-make-timespans ()
+  "Make the section in the sfs collections TUI for recently touched files."
+  (let ((timespan-collections '())
+        (timespans
+         `(("day" . ,(calendar-current-date))
+           ("week" . ,(calendar-gregorian-from-absolute
+                       (+ (calendar-absolute-from-gregorian (calendar-current-date)) -7)))
+           ("month" . ,(calendar-gregorian-from-absolute
+                        (+ (calendar-absolute-from-gregorian (calendar-current-date)) -30))) ) )
+        query-str day month year rtn-date)
+    (dolist (elmt timespans)
+      (setq rtn-date (cdr elmt))
+      (setq day (nth 1 rtn-date))
+      (setq month (nth 0 rtn-date))
+      (setq year (nth 2 rtn-date))
+      (setq query-str (format "date:%d-%d-%d" year month day))
+      (add-to-list 'timespan-collections `(,(car elmt) . ,query-str))
+      )
+    timespan-collections))
+(defvar sfs--collection-timespans)
+(setq sfs--collection-timespans (sfs--collection-make-timespans))
+
+(defun sfs--collections-make-places ()
+  "Make the places collections."
+  `(("comics" . ,(sfs--queries-or (sfs-split-and-prefix "ext" "djvu cbr cbz cb7 cbt cba")))
+    ("books" . ,(sfs--queries-or (sfs-split-and-prefix "ext" "ibooks pdf epub pbd djvu azw azw3 kf8 kfx fb2 mobi opf")))
+    ("documents" . ,(sfs--queries-or (sfs-split-and-prefix "ext" "pdf doc docx txt tex")))
+    ("music" . "mime:audio")
+    ("video" . "mime:video")
+    ("text" . "mime:text")))
+(defvar sfs--collection-places)
+(setq sfs--collection-places (sfs--collections-make-places))
+
+(defvar sfs--collection-all)
+(setq sfs--collection-all `(,@sfs--collection-places
+                            ,@sfs--collection-favs
+                            ,@sfs--collection-timespans))
+
+(cl-defstruct (sfs-section (:constructor sfs-section-create (top bot))
+                           (:copier nil))
+  top bot)
 
 (defface sfs-heading '((t (:bold t :underline t)))
   "Face used for displaying underlined bold emphasized text (_*word*_)."
   )
 
+(defun sfs-ex-query ()
+  "Execute query builder query."
+  (interactive)
+  (let (sep)
+    (sfs-recoll (string-join (cdr sfs--query ())))))
+
 (defun sfs--insert-section-heading (heading)
   "Format and insert HEADING into file."
   (put-text-property 0 (length heading) 'face 'sfs-heading
                      heading)
-  (widget-insert heading ":\n")
+  (widget-insert heading ":\n"))
+
+(defface sfs-logo
+  '((((class grayscale) (background light)) :foreground "LightGray" :weight bold)
+    (((class grayscale) (background dark))  :foreground "DimGray" :weight bold)
+    (((class color) (min-colors 88) (background light)) :foreground "Purple")
+    (((class color) (min-colors 88) (background dark))  :foreground "Cyan1")
+    (((class color) (min-colors 16) (background light)) :foreground "Purple")
+    (((class color) (min-colors 16) (background dark))  :foreground "Cyan")
+    (((class color) (min-colors 8)) :foreground "cyan" :weight bold)
+    (t (:bold t)))
+  "Face used for displaying underlined bold emphasized text (_*word*_).")
+
+(defun set-region-read-only (begin end)
+  "Sets the read-only text property on the marked region.
+
+Use `set-region-writeable' to remove this property."
+  ;; See https://stackoverflow.com/questions/7410125
+  (interactive "r")
+  (with-silent-modifications
+    (put-text-property begin end 'read-only t)))
+
+;;; Query Editor
+
+(defvar sfs--query "")
+
+(defvar sfs--fields)
+(setq sfs--fields
+      '("author"
+        "containerfilename"
+        "dir"
+        "ext"
+        "filename"
+        "subject"
+        "keyword"
+        "recipient"
+        "rclcat"
+        "mime"
+        "size"
+        "date"
+        ))
+
+(defvar sfs--ops)
+(setq sfs--ops
+      '("OR"
+        "AND"
+        ","
+        "/"
+        "-"))
+
+(defvar sfs-query-highlights nil "First element for `font-lock-defaults'.")
+(dolist (field sfs--fields)
+  (add-to-list 'sfs-query-highlights `(,(concat field ":") . font-lock-keyword-face)))
+(dolist (op sfs--ops)
+  (add-to-list 'sfs-query-highlights `(,op  . font-lock-function-name-face)))
+
+;; I need explicit function names to make help-modes useful(use which-key and edit names?), this macro automatically creates them to keep fields as single source of truth
+(defmacro sfs--def-prefix-fun (field)
+  "Generate a function for inserting FIELD prefix into the query editor."
+  `(defun ,(intern (concat "sfs--prefix-" field)) ()
+     ,(concat "Add " field ": prefix in query editor.")
+     (interactive)
+     (insert ,(concat field ":"))))
+(dolist (field sfs--fields)
+  (eval `(sfs--def-prefix-fun ,field)))
+
+(defvar sfs--editor-widget)
+(defun sfs-save-query (id)
+  "Save current query to ID."
+  (interactive "sEnter ID for query: ")
+  (add-to-list 'sfs--collection-favs `(,id . (,(widget-value sfs--editor-widget)))))
+
+(defun sfs--insert-collection (collection)
+  "Insert the given COLLECTION into the query editor."
+  (interactive "sEnter a collection: ")
+  (widget-insert (cdr (assoc collection sfs--collection-all))))
+
+(defvar sfs-query-editor-mode-map)
+(setq sfs-query-editor-mode-map
+      (let ((map (copy-keymap widget-field-keymap)))
+        (define-key map (kbd "<C-return>") 'widget-field-activate)
+        (define-key map (kbd "<return>") 'newline-and-indent)
+        map))
+(general-define-key
+ :keymaps 'sfs-query-editor-mode-map
+ :prefix "C-c"
+ "C-a" '(sfs--prefix-author            :wk "Prefix author:")
+ "C-c" '(sfs--prefix-containerfilename :wk "Prefix containerfilename:")
+ "C-d" '(sfs--prefix-dir               :wk "Prefix dir:")
+ "C-e" '(sfs--prefix-ext               :wk "Prefix ext:")
+ "C-f" '(sfs--prefix-filename          :wk "Prefix filename:")
+ "C-j" '(sfs--prefix-subject           :wk "Prefix subject:")
+ "C-k" '(sfs--prefix-keyword           :wk "Prefix keyword:")
+ "C-r" '(sfs--prefix-recipient         :wk "Prefix recipient:")
+ "C-l" '(sfs--prefix-rclcat            :wk "Prefix rclcat:")
+ "C-m" '(sfs--prefix-mime              :wk "Prefix mime:")
+ "C-o" '(sfs--insert-collection        :wk "Insert collection")
+ "C-s" '(sfs--prefix-size              :wk "Prefix size:")
+ "C-t" '(sfs--prefix-date              :wk "Prefix date:")
+ "C-v" '(sfs-save-query                :wk "Save query"))
+
+
+(define-derived-mode sfs-query-editor-mode prog-mode "SFS"
+  "Major mode for SFS interactive query editor.
+
+The query editor uses the Recoll query language, documented here:
+https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.html"
+  (setq font-lock-defaults '(sfs-query-highlights))
   )
 
+(define-widget 'sfs-query 'default
+  "An editable text field for sfs queries.
+Note: In an `sfs-query' widget, the `%v' escape must be preceded
+by some other text in the `:format' string (if specified)."
+  :convert-widget 'widget-value-convert-widget
+  :keymap sfs-query-editor-mode-map
+  :format "%v"
+  :help-echo "M-TAB: complete field; RET: enter value"
+  :value ""
+  :prompt-internal 'widget-field-prompt-internal
+  :prompt-history 'widget-field-history
+  :prompt-value 'widget-field-prompt-value
+  :action 'widget-field-action
+  :validate 'widget-field-validate
+  :valid-regexp ""
+  :error "Field's value doesn't match allowed forms"
+  :value-create 'widget-field-value-create
+  :value-set 'widget-field-value-set
+  :value-delete 'widget-field-value-delete
+  :value-get 'widget-field-value-get
+  :match 'widget-field-match)
+
+(defvar sfs--logo-section)
 (defun sfs-insert-logo ()
   "Make SFS logo in query builder buffer."
-  (widget-insert (f-read-text "./assets/graffiti.txt"))
-  )
-
-(defun sfs-query-or (query-list)
-  "Create ORed query string from QUERY-LIST."
-  (string-join query-list " OR "))
-
-(defvar sfs--qb-logic-states)
-(setq sfs--qb-logic-states '((0 . "AND")
-                             (1 . "OR" )))
-(defvar sfs--qb-logic-state 0)
-(defun sfs--qb-scroll-logic-state (n)
-  "Scrolls the query builder logic state N slots."
-  (setq sfs--qb-logic-state (% (+ sfs--qb-logic-state n)
-                               (length sfs--qb-logic-states))))
-
-;;; query builder TUI
-(defvar sfs-qb-mode-map "Keymap for `sfs-qb-mode'.")
-(setq sfs-qb-mode-map
-      (let ((map (make-keymap)))
-        (suppress-keymap map t)
-        (define-key map (kbd "RET") 'sfs-ex-query)
-        (define-key map (kbd "TAB") '(lambda () (sfs--qb-scroll-logic-state 1)))
-        (define-key map (kbd "C-n") 'sfs-tui-next-line)
-        (define-key map (kbd "C-p") 'sfs-tui-previous-line)
-        (define-key map (kbd "a") 'sfs-author)
-        (define-key map (kbd "c") 'sfs-containerfilename)
-        (define-key map (kbd "d") 'sfs-dir)
-        (define-key map (kbd "e") 'sfs-ext)
-        (define-key map (kbd "f") 'sfs-filename)
-        (define-key map (kbd "h") '(lambda () (interactive) (which-key-show-keymap 'sfs-qb-mode-map)))
-        (define-key map (kbd "i") 'sfs-simple)
-        (define-key map (kbd "j") 'sfs-subject)
-        (define-key map (kbd "k") 'sfs-keyword)
-        (define-key map (kbd "r") 'sfs-recipient)
-        (define-key map (kbd "l") 'sfs-rclcat)
-        (define-key map (kbd "m") 'sfs-mime)
-        (define-key map (kbd "q") 'quit-window)
-        (define-key map (kbd "s") 'sfs-size)
-        (define-key map (kbd "t") 'sfs-date)
-        (define-key map (kbd "x") 'sfs-ex-query)
-        map)
-      )
-
-(define-derived-mode sfs-qb-mode special-mode "SFS"
-  "Mode for SFS interactive query builder interface."
-  (font-lock-mode -1)
-  )
-
-(defvar sfs--qb-bot 0)
-(defun sfs-tui-next-line ()
-  "Bound point within query-builder."
-  (interactive)
-  (end-of-line)
-  (when (<= (+ (point) 1) sfs--qb-bot)
-    (next-line))
-  (beginning-of-line)
-  )
-;; (substitute-key-definition 'next-line 'sfs-tui-next-line sfs-qb-mode-map)
-
-(defvar sfs--qb-top 0)
-(defun sfs-tui-previous-line ()
-  "Bound point within query-builder."
-  (interactive)
-  (beginning-of-line)
-  (when (>= (- (point) 1) sfs--qb-top)
-    (previous-line))
-  )
-;; (substitute-key-definition 'previous-line 'sfs-tui-previous-line sfs-qb-mode-map)
-
-(defstruct (sfs-field (:constructor sfs-field-create (label collector desc prefix))
-                      (:copier nil))
-  label collector desc prefix)
-
-(defvar sfs-fields nil)
-(setq sfs-fields
-      `( ,(sfs-field-create "(a)uthor" #'sfs-author "looks for AUTHOR in Recoll's extracted metadata" "author")
-         ,(sfs-field-create "(c)ontainer" #'sfs-containerfilename "filename set for both top-level and subdocuments" "containerfilename")
-         ,(sfs-field-create "(d)irectory" #'sfs-dir "full or relative, tildes and wildcards expanded, positive or negative, e.g. bin/ -~/" "dir")
-         ,(sfs-field-create "(e)xtension" #'sfs-ext "filename extension" "ext")
-         ,(sfs-field-create "(f)ilename" #'sfs-filename "not necessarily set for compound documents, e.g. those in an EPUB section" "filename")
-         ,(sfs-field-create "s(i)mple" #'sfs-simple "generic google-like search query" "")
-         ,(sfs-field-create "sub(j)ect" #'sfs-subject "subject/title/caption of the document from extracted metadata" "subject")
-         ,(sfs-field-create "(k)eyword" #'sfs-keyword "document-specified keywords(few documents actually have any)" "keyword")
-         ,(sfs-field-create "(r)ecipient" #'sfs-recipient "looks for RECIPIENT in Recoll's extracted metadata" "recipient")
-         ,(sfs-field-create "rc(l)cat" #'sfs-rclcat "e.g. text or -presentation etc." "rclcat")
-         ,(sfs-field-create "(m)ime type" #'sfs-mime "e.g. text/plain or text/* etc." "mime")
-         ,(sfs-field-create "(s)ize" #'sfs-size "e.g. >1000k or <30G or =10g etc." "size")
-         ,(sfs-field-create "da(t)e" #'sfs-date "YYYY-MM-DD/YYYY-MM-DD or YYYY/ or /YYYY-MM or YYYY etc." "date")
-         ))
-
-(defun get-field-by-prefix (prefix)
-  (-filter (lambda (field)
-             (string= (sfs-field-prefix field) prefix))
-           sfs-fields))
-
-(defun sfs-make-section-fields ()
-  "Make the fields section in the query builder buffer."
-  (let ()
-    (sfs--insert-section-heading "Fields")
-    (push-mark (point))
-    (mapcar
-     (lambda (field)
-       (widget-create 'push-button
-                      :notify (lambda (&rest ignore)
-                                (sfs--tui-run (sfs-field-collector field))
-                                )
-                      (sfs-field-label field)
-                      )
-       (widget-insert (concat "\t: " (sfs-field-desc field) "\n"))
-       )
-     sfs-fields)
-    (let ((inhibit-read-only t))
-      (align-regexp (mark) (point) "\\(\\s-*\\):"))
-      (pop-mark)
+  ;; (widget-insert (f-read-text "./assets/graffiti.txt"))
+  (let ((logo "--- S*fs : query editor ---")
+        top bot)
+    (setq top (point))
+    (widget-insert logo)
+    (setq bot (point))
+    (widget-insert "\n")
+    (setq sfs--logo-section (sfs-section-create top bot))
     )
   )
 
-(defvar sfs-query)
-(setq sfs-query '(0))
-
-(defun sfs-insert-query-operator (op)
-  "Insert the query operator set with the selected OP emphasized."
-  (let (selector)
-    ;; (put-text-property 0 (length (alist-get op sfs--qb-logic-states)) 'face 'bold (alist-get op sfs--qb-logic-states))
-    (setq selector
-          (mapcar (lambda (el)
-                    (if (eq op (car el))
-                        (propertize (cdr el) 'face 'bold)
-                      (cdr el)))
-                  sfs--qb-logic-states))
-    (widget-insert (reduce (lambda (l r)
-                             (concat l "/" r))
-                           selector)))
-  )
-
-
-(defun sfs-insert-query (query)
-  "Insert nested QUERY into the query builder TUI."
-  (widget-insert "(")
-  (sfs-insert-query-operator (car query))
-  (widget-insert "\n")
-  (dolist (elmt (subseq query 1))
-    (widget-insert " ")
-    (if (listp elmt)
-        (sfs-insert-query query)
-      (widget-insert elmt))
-    (widget-insert "\n"))
-  (widget-insert ")\n")
-  )
-
-(defun sfs-make-section-query ()
+(defvar sfs--query-editor-section)
+(defun sfs-make-section-query-editor ()
   "Make the query section in the sfs TUI."
-  (sfs-insert-query sfs-query)
-  ;; (widget-insert "(AND\n")
-  ;; (dolist (elmt sfs-query)
-  ;;   (widget-insert " ")
-  ;;   (widget-insert (concat elmt "\n")))
-  ;; (widget-insert ")\n")
-  (widget-create 'push-button
-                 :notify (lambda (&rest ignore)
-                           (sfs-ex-query))
-                 "e(x)ecute"))
+  (let (top bot editor-widget)
+    (setq top (point))
+    (setq sfs--editor-widget
+          (widget-create 'sfs-query
+                         :keymap sfs-query-editor-mode-map
+                         :action (lambda (wid &rest ignore)
+                                   (sfs-recoll (widget-value wid)))
+                         :notify (lambda (wid changed &rest ingore)
+                                   (setq sfs--query (widget-value wid)))))
+    (setq bot (point))
+    (setq sfs--query-editor-section (sfs-section-create top bot))
+    (widget-create 'push-button
+                   :notify (lambda (&rest ignore)
+                             (sfs-recoll (widget-value sfs--editor-widget))
+                             )
+                   "Execute")
+    (widget-insert "(C-RET)\n")
+    (widget-create 'push-button
+                   :notify (lambda (&rest ignore)
+                             (call-interactively #'sfs-save-query)
+                             )
+                   "Save query"))
+  (widget-insert "(C-c C-v)")
+  )
 
-(defun sfs--make-qb-tui ()
+(defun sfs--make-query-editor-tui ()
   "Write the tui buffer."
   (let ((buffer (switch-to-buffer "*SFS*")))
     (with-current-buffer buffer
@@ -211,171 +276,39 @@
       (let ((inhibit-read-only t))
         (erase-buffer))
       (sfs-insert-logo)
-      (widget-insert "\n\n")
-      (sfs--insert-section-heading "Query")
-      (setq sfs--qb-top (point))
-      (sfs-make-section-query)
-      (setq sfs--qb-bot (point))
-      (widget-insert "\n\n")
-      (sfs-make-section-fields)
-      (sfs-qb-mode)
+      (sfs-make-section-query-editor)
       (keyboard-escape-quit)
-      (set-window-point (get-buffer-window "*SFS*") sfs--qb-top)
+      (set-window-point (get-buffer-window "*SFS*")
+                        (sfs-section-top sfs--query-editor-section))
       (widget-setup)
-      ))
-  )
+      (sfs-query-editor-mode)
+      (set-region-read-only (sfs-section-top sfs--logo-section)
+                            (sfs-section-bot sfs--logo-section))
+      )))
 
 (defun sfs--tui-run (f)
   "Call F in TUI context."
   (call-interactively f)
-  (sfs--make-qb-tui))
+  (sfs--make-query-editor-tui))
 
 (defun sfs ()
   "Go to SFS start page."
   (interactive)
-  (sfs--make-qb-tui)
+  (sfs--make-query-editor-tui)
   )
 
-(defun sfs-save-query (id)
-  "Save current query to ID."
-  (interactive "sEnter ID for query: ")
-  (add-to-list 'sfs-favs `(,id . (,sfs-query))))
-
-(defun sfs-comp-query (query)
-  "Compose QUERY into a string for the search engine."
-  (let (op args)
-    (setq op (car query))
-    (setq args (cdr query))
-    (reduce (lambda (l r) (concat l " " op " " r)) args))
-  ;; (if (listp query)
-  ;;     (let (sep)
-  ;;       (setq sep (cdr (assoc (car query) (sfs--qb-scroll-logic-states))))
-  ;;       (reduce sfs-comp-query query)))
-  )
-
-(defun sfs-ex-query ()
-  "Execute query builder query."
-  (interactive)
-  (let (sep)
-    (sfs-recoll (string-join (cdr sfs-query ())))))
-
-(defun sfs-split-and-prefix (prefix query)
-  "Split the QUERY on space, and prepend the provided PREFIX to each."
-  (mapcar #'(lambda (str)
-              (concat prefix ":" str))
-          (split-string query)))
-
-(defun sfs-query-append (input-str prefix)
-  "Append INPUT-STR to sfs-query with PREFIX."
-  ;; (interactive (concat "sEnter " prefix ": "))
-  ;; (add-to-list 'sfs-query (sfs-split-and-prefix prefix input-str) t)
-  (add-to-list 'sfs-query (concat prefix ":\"" input-str "\"") t)
-  ;; (setq sfs-query (append
-  ;;                  (sfs-split-and-prefix prefix input-str)
-  ;;                  sfs-query))
-  (sfs--make-qb-tui))
-
-(defun sfs-author (author)
-  "Add query for files by AUTHOR."
-  (interactive "sEnter author: ")
-  (sfs-query-append author "author"))
-
-(defun sfs-containerfilename (filename)
-  "Add query for files with container FILENAME."
-  (interactive "sEnter container filename/s: ")
-  (sfs-query-append filename "containerfilename"))
-
-(defun sfs-date (timeframe)
-  "Add query for files within TIMEFRAME."
-  (interactive "sEnter timeframe/s: ")
-  (sfs-query-append timeframe "date"))
-
-(defun sfs-dir (dir)
-  "Add query for files in DIR."
-  (interactive "sEnter directory/s: ")
-  (sfs-query-append dir "dir"))
-
-(defun sfs-ext (ext)
-  "Add query for files with EXT."
-  (interactive "sEnter file extension/s: ")
-  (sfs-query-append ext "ext"))
-
-(defun sfs-filename (filename)
-  "Add query for files with FILENAME."
-  (interactive "sEnter filename/s: ")
-  (sfs-query-append filename "filename"))
-
-(defun sfs-keyword (keyword)
-  "Add query for files containing KEYWORD."
-  (interactive "sEnter keyword/s: ")
-  (sfs-query-append keyword "keyword"))
-
-(defun sfs-mime (mime)
-  "Add query for files of MIME type."
-  (interactive "sEnter MIME type/s: ")
-  (sfs-query-append mime "mime"))
-
-(defun sfs-recipient (recipient)
-  "Add query for files from RECIPIENT."
-  (interactive "sEnter recipient: ")
-  (sfs-query-append recipient "recipient"))
-
-(defun sfs-rclcat (rclcat)
-  "Add query for files of RCLCAT."
-  (interactive "sEnter RCLCAT type/s: ")
-  (sfs-query-append rclcat "rclcat"))
-
-(defun sfs-simple (query)
-  "Add a simple QUERY."
-  (interactive "sEnter query: ")
-  (sfs-query-append `(,query) ""))
-
-(defun sfs-size (size)
-  "Add query for files of SIZE."
-  (interactive "sEnter size/s: ")
-  (sfs-query-append size "size"))
-
-(defun sfs-subject (subject)
-  "Add query for files with SUBJECT/s."
-  (interactive "sEnter subject/s: ")
-  (sfs-query-append subject "subject"))
-
-;;; collections TUI
-(defvar sfs-collections-mode-map
-  (let ((map (make-keymap)))
-    (suppress-keymap map t)
-    (define-key map (kbd "RET") 'sfs-ex-query)
-    (define-key map (kbd "a") 'sfs-author)
-    (define-key map (kbd "c") 'sfs-containerfilename)
-    (define-key map (kbd "d") 'sfs-dir)
-    (define-key map (kbd "e") 'sfs-ext)
-    (define-key map (kbd "f") 'sfs-filename)
-    (define-key map (kbd "h") '(lambda () (interactive) (which-key-show-keymap 'sfs-collections-mode-map)))
-    (define-key map (kbd "i") 'sfs-simple)
-    (define-key map (kbd "j") 'sfs-subject)
-    (define-key map (kbd "k") 'sfs-keyword)
-    (define-key map (kbd "r") 'sfs-recipient)
-    (define-key map (kbd "l") 'sfs-rclcat)
-    (define-key map (kbd "m") 'sfs-mime)
-    (define-key map (kbd "q") 'quit-window)
-    (define-key map (kbd "s") 'sfs-size)
-    (define-key map (kbd "t") 'sfs-date)
-    (define-key map (kbd "x") 'sfs-ex-query)
-    map)
-  "Keymap for `sfs-collections-mode'.")
-
+;;; Collections TUI
 (define-derived-mode sfs-collections-mode special-mode "SFS Collections"
   "Mode for SFS interactive collections interface."
   (font-lock-mode -1))
-
 
 (defun sfs--make-section-places ()
   "Make the recent section in the sfs collections TUI."
   (sfs--insert-section-heading "Places")
   (let ((media
-         `(("comics" . ,(sfs-query-or (sfs-split-and-prefix "ext" "djvu cbr cbz cb7 cbt cba")))
-           ("books" . ,(sfs-query-or (sfs-split-and-prefix "ext" "ibooks pdf epub pbd djvu azw azw3 kf8 kfx fb2 mobi opf")))
-           ("documents" . ,(sfs-query-or (sfs-split-and-prefix "ext" "pdf doc docx txt tex")))
+         `(("comics" . ,(sfs--queries-or (sfs-split-and-prefix "ext" "djvu cbr cbz cb7 cbt cba")))
+           ("books" . ,(sfs--queries-or (sfs-split-and-prefix "ext" "ibooks pdf epub pbd djvu azw azw3 kf8 kfx fb2 mobi opf")))
+           ("documents" . ,(sfs--queries-or (sfs-split-and-prefix "ext" "pdf doc docx txt tex")))
            ("music" . "mime:audio")
            ("video" . "mime:video")
            ("text" . "mime:text")))
@@ -392,7 +325,7 @@
 ;; (defun sfs--make-section-tags ()
 ;;   "Make the tags section in the sfs collections TUI."
 ;;   (sfs--insert-section-heading "Tags")
-;;   (dolist (elmt sfs-favs)
+;;   (dolist (elmt sfs--collection-favs)
 ;;     (widget-create 'push-button
 ;;                    :notify (lambda (&rest ignore)
 ;;                              (sfs-recoll (string-join (cadr elmt) " ")))
@@ -400,7 +333,7 @@
 ;;     (widget-insert "\n")))
 
 (defun sfs--make-section-recents ()
-  "Make the recent section in the sfs collections TUI."
+  "Make the section in the sfs collections TUI for recently touched files."
   (sfs--insert-section-heading "Recent")
   (let ((timespans
          `(("today" . ,(calendar-current-date))
@@ -424,7 +357,7 @@
 (defun sfs--make-section-favorites ()
   "Make the favorites section in the sfs collections TUI."
   (sfs--insert-section-heading "Favorites")
-  (dolist (elmt sfs-favs)
+  (dolist (elmt sfs--collection-favs)
     (widget-create 'push-button
                    :notify (lambda (&rest ignore)
                              (sfs-recoll (string-join (cadr elmt) " ")))
