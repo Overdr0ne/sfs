@@ -19,32 +19,7 @@
 ;;
 ;;; Code:
 
-(defvar sfs-favs nil)
-
-(defun sfs-make-section-favs ()
-  "Make the favorites section in the sfs TUI."
-  (sfs--insert-section-heading "Favorites")
-  (dolist (elmt sfs-favs)
-    (widget-create 'push-button
-                   :notify (lambda (&rest ignore)
-                             (sfs-recoll (string-join (cadr elmt) " ")))
-                   (car elmt))
-    (widget-insert " ")))
-
-(defun sfs--make-search-tui ()
-  "Write the tui buffer."
-  (let ((buffer (switch-to-buffer "*SFS Collections*")))
-    (with-current-buffer buffer
-      (kill-all-local-variables)
-      (remove-overlays)
-      (let ((inhibit-read-only t))
-        (erase-buffer))
-      (sfs-insert-logo)
-      (widget-insert "\n\n")
-      (sfs-make-section-favs)
-      (sfs-mode)
-      (keyboard-escape-quit)
-      (widget-setup))))
+(require 'sfs-recoll)
 
 (provide 'sfs-collections)
 ;;; sfs-collections.el ends here
