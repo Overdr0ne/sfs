@@ -66,6 +66,17 @@ sfs-tag-get
 #+end_src
 
 * Todo
-- Add a fancy start page with lots of suggested tag buttons, search history, help commands, etc. that can be conveniently added and removed and composed, sorta like a root directory, model it a bit like magit with really short keybindings.
-- Iterative filtering of results so it feels more like you are navigating your file-system, but non-hierarchically!
-- Cross-platform...
+- [X] Add a fancy start page with lots of suggested tag buttons, search history, help commands, etc. that can be conveniently added and removed and composed, sorta like a root directory, model it a bit like magit with really short keybindings. The sfs query editor is my answer to this
+- [ ] Iterative filtering of results so it feels more like you are navigating your file-system, but non-hierarchically!
+  + I think the query system is fast enough that simply not deleting the query after search is good enough, though maybe I could have search easily configured to be performed in a separate window or section of the dired buffer to make it more clearly integrated...
+- [ ] ivy interface for collections
+- [ ] Integrate completion after field tag is entered to suggest dirs/tags/collections/etc.
+- [ ] Improve help to make the query language more obvious and intuitive
+- [-] Cross-platform...
+  + [-] Linux
+  + [ ] Mac
+  + [ ] Windows
+- Bugs...
+  + From Recoll: "mime, rclcat, size and date criteria always affect the whole query (they are applied as a final filter), even if set with other terms inside a parenthese. mime (or the equivalent rclcat) is the only field with an OR default. You do need to use OR with ext terms for example." One consequence is you can't OR dates :(
+  + The query editor is basically a major mode inside another major mode. Emacs does not natively support multiple major modes in a single buffer, so what I have is a big, ugly hack. You can break out of editability by backspacing the first character, then you're stuck in read-only. ugh...
+  + Syntax highlighting is very basic, not context aware, and can conflate a date '/' with the or operator
