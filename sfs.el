@@ -28,5 +28,15 @@
 (require 'sfs-tag)
 (require 'sfs-tui)
 
+(let ((service-filename
+       (concat (file-name-directory load-file-name) "service.py")))
+  (if (file-exists-p service-filename)
+     (start-process
+      "recoll-server"
+      "*recoll-server*"
+      "python3"
+      service-filename)
+   (message "SFS: Couldn't find service.py...")))
+
 (provide 'sfs)
 ;;; sfs.el ends here
