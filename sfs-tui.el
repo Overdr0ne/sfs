@@ -2,13 +2,13 @@
 ;;
 ;; Copyright (C) 2020
 ;;
-;; Author:  <http://github/sam>
+;; Author:  <http://github/Overdr0ne>
 ;; Maintainer:  <scmorris.dev@gmail.com>
 ;; Created: July 06, 2020
 ;; Modified: July 06, 2020
 ;; Version: 0.0.1
 ;; Keywords:
-;; Homepage: https://github.com/sam/sfs
+;; Homepage: https://github.com/Overdr0ne/sfs
 ;; Package-Requires: ((emacs 26.3) (cl-lib "0.5"))
 ;;
 ;; This file is not part of GNU Emacs.
@@ -48,8 +48,8 @@
   top bot)
 
 (defface sfs-heading '((t (:bold t :underline t)))
-  "Face used for displaying underlined bold emphasized text (_*word*_)."
-  )
+  "Face used for displaying underlined bold emphasized text (_*word*_).")
+
 
 ;; (defun sfs-ex-query ()
 ;;   "Execute query builder query."
@@ -169,8 +169,8 @@ Use `set-region-writeable' to remove this property."
 
 The query editor uses the Recoll query language, documented here:
 https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.html"
-  (setq font-lock-defaults '(sfs--query-highlights))
-  )
+  (setq font-lock-defaults '(sfs--query-highlights)))
+
 
 (define-widget 'sfs-query 'default
   "An editable text field for sfs queries.
@@ -204,9 +204,9 @@ by some other text in the `:format' string (if specified)."
     (widget-insert logo)
     (setq bot (point))
     (widget-insert "\n")
-    (setq sfs--logo-section (sfs-section-create top bot))
-    )
-  )
+    (setq sfs--logo-section (sfs-section-create top bot))))
+
+
 
 (defvar sfs--query-editor-section)
 (defun sfs-make-section-query-editor ()
@@ -231,8 +231,8 @@ by some other text in the `:format' string (if specified)."
                    :notify (lambda (&rest ignore)
                              (call-interactively #'sfs-save-query))
                    "Save query"))
-  (widget-insert "(C-c C-v)")
-  )
+  (widget-insert "(C-c C-v)"))
+
 
 (defun sfs--make-query-editor-tui ()
   "Write the tui buffer."
@@ -250,8 +250,8 @@ by some other text in the `:format' string (if specified)."
       (widget-setup)
       (sfs-query-editor-mode)
       (set-region-read-only (sfs-section-top sfs--logo-section)
-                            (sfs-section-bot sfs--logo-section))
-      )))
+                            (sfs-section-bot sfs--logo-section)))))
+
 
 (defun sfs--tui-run (f)
   "Call F in TUI context."
@@ -261,8 +261,8 @@ by some other text in the `:format' string (if specified)."
 (defun sfs ()
   "Go to SFS start page."
   (interactive)
-  (sfs--make-query-editor-tui)
-  )
+  (sfs--make-query-editor-tui))
+
 
 ;;; Collections TUI
 (defun sfs--class-recents ()
@@ -275,7 +275,7 @@ by some other text in the `:format' string (if specified)."
            (month . ,(calendar-gregorian-from-absolute
                         (+ (calendar-absolute-from-gregorian (calendar-current-date)) -30)))
            (year . ,(calendar-gregorian-from-absolute
-                       (+ (calendar-absolute-from-gregorian (calendar-current-date)) -365)))) )
+                       (+ (calendar-absolute-from-gregorian (calendar-current-date)) -365)))))
         query-str day month year rtn-date)
     (dolist (elmt recents)
       (setq rtn-date (cdr elmt))
@@ -283,8 +283,8 @@ by some other text in the `:format' string (if specified)."
       (setq month (nth 0 rtn-date))
       (setq year (nth 2 rtn-date))
       (setq query-str (format "date:%d-%d-%d/" year month day))
-      (add-to-list 'recent-collections `(,(car elmt) . ,query-str))
-      )
+      (add-to-list 'recent-collections `(,(car elmt) . ,query-str)))
+
     recent-collections))
 
 (defun sfs--class-places ()
@@ -319,9 +319,9 @@ by some other text in the `:format' string (if specified)."
         (define-key map (kbd "<C-return>") 'sfs-fetch-collection-at-point)
         map))
 (define-derived-mode sfs-collections-mode outline-mode "SFS Collections"
-  "Mode for SFS interactive collections interface."
+  "Mode for SFS interactive collections interface.")
   ;; (outline-mode)
-  )
+
 
 (defface sfs--read-only '((default . (:background "beige")))
   "Face for `my-read-only-region'")
@@ -420,8 +420,8 @@ Read-only text is given the face `sfs--read-only'."
     (setq headings (buffer-substring-no-properties (point) (point-max)))
     (setq headings (split-string headings "\n"))
     (setq headings (remove-if (lambda (el) (string= el "")) headings))
-    (first (sfs--headings-to-tree headings))
-    ))
+    (first (sfs--headings-to-tree headings))))
+
 
 (defun sfs--tree-to-query (tree)
   (let ((root (first tree)))
@@ -434,7 +434,7 @@ Read-only text is given the face `sfs--read-only'."
           ((string= (first (split-string root ":"))
                     "set")
            (alist-get (intern (second (split-string root ":")))
-                        (sfs--class-all)))
+                      (sfs--class-all)))
           ;; also let people search entire classes as the union of its sets
           ((string= (first (split-string root ":"))
                     "class")
@@ -452,8 +452,8 @@ Read-only text is given the face `sfs--read-only'."
 (defun sfs-collections ()
   "Go to SFS start page."
   (interactive)
-  (sfs--make-collections-tui)
-  )
+  (sfs--make-collections-tui))
+
 
 (provide 'sfs-tui)
 ;;; sfs-tui.el ends here

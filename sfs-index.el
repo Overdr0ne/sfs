@@ -2,13 +2,13 @@
 ;;
 ;; Copyright (C) 2020
 ;;
-;; Author:  <http://github/sam>
+;; Author:  <http://github/Overdr0ne>
 ;; Maintainer:  <scmorris.dev@gmail.com>
 ;; Created: August 10, 2020
 ;; Modified: August 10, 2020
 ;; Version: 0.0.1
 ;; Keywords:
-;; Homepage: https://github.com/sam/sfs-index
+;; Homepage: https://github.com/Overdr0ne/sfs
 ;; Package-Requires: ((emacs 26.3) (cl-lib "0.5"))
 ;;
 ;; This file is not part of GNU Emacs.

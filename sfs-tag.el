@@ -8,7 +8,7 @@
 ;; Modified: June 19, 2020
 ;; Version: 0.0.1
 ;; Keywords:
-;; Homepage: https://github.com/sam/
+;; Homepage: https://github.com/Overdr0ne/sfs
 ;; Package-Requires: ((emacs 26.3) (cl-lib "0.5"))
 ;;
 ;; This file is not part of GNU Emacs.

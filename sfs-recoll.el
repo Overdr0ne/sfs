@@ -257,11 +257,5 @@ QUERYSTR is a search string conforming to the Recoll Query Language."
    "com.sfs.SearchInterface"
    "Exit"))
 
-(start-process
- "recoll-server"
- "*recoll-server*"
- "python3"
- (concat (file-name-directory load-file-name) "service.py"))
-
 (provide 'sfs-recoll)
 ;;; sfs-recoll.el ends here
