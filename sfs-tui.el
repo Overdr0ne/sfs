@@ -287,8 +287,8 @@ by some other text in the `:format' string (if specified)."
 
     recent-collections))
 
-(defun sfs--class-places ()
-  "Make the places class."
+(defun sfs--class-media ()
+  "Make the media class."
   `((comics . ,(sfs--queries-or (sfs-split-and-prefix "ext" "djvu cbr cbz cb7 cbt cba")))
     (books . ,(sfs--queries-or (sfs-split-and-prefix "ext" "ibooks pdf epub pbd djvu azw azw3 kf8 kfx fb2 mobi opf")))
     (documents . ,(sfs--queries-or (sfs-split-and-prefix "ext" "pdf doc docx txt tex")))
@@ -297,7 +297,7 @@ by some other text in the `:format' string (if specified)."
     (text . "mime:text")))
 
 (defun sfs--class-all ()
-  `(,@(sfs--class-places)
+  `(,@(sfs--class-media)
     ,@sfs-class-favs
     ,@(sfs--class-recents)))
 
@@ -306,7 +306,8 @@ by some other text in the `:format' string (if specified)."
   ;; (sfs--insert-section-label heading)
   (insert "* class:" id "\n")
   (dolist (elmt class)
-    (insert (concat "** set:" (symbol-name (car elmt)) "\n"))))
+    (insert (concat "** class:" (symbol-name (car elmt)) "\n"))
+    (insert (concat "*** " (cdr elmt)) "\n")))
 
 (defun sfs-insert-set (set-id)
   "Insert the set associated with SET-ID at point."
@@ -346,7 +347,7 @@ Read-only text is given the face `sfs--read-only'."
 
 (defcustom sfs-collector-classes '((sfs-class-favs     "favorites")
                                    (sfs--class-recents "recents")
-                                   (sfs--class-places  "places"))
+                                   (sfs--class-media  "media"))
   "A list of set classes to be displayed in the SFS collector TUI."
   :type  'sexp
   :group 'sfs)
@@ -431,10 +432,10 @@ Read-only text is given the face `sfs--read-only'."
                    (string-join (mapcar #'sfs--tree-to-query (rest tree))
                                 (concat " " root " "))
                    ")"))
-          ((string= (first (split-string root ":"))
-                    "set")
-           (alist-get (intern (second (split-string root ":")))
-                      (sfs--class-all)))
+          ;; ((string= (first (split-string root ":"))
+          ;;           "set")
+          ;;  (alist-get (intern (second (split-string root ":")))
+          ;;             (sfs--class-all)))
           ;; also let people search entire classes as the union of its sets
           ((string= (first (split-string root ":"))
                     "class")
