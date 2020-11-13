@@ -19,7 +19,7 @@
 ;;
 ;;; Code:
 
-(defun sfs-recoll-index ()
+(defun sfs-index-build ()
   "Start the recoll indexer."
   (interactive)
   (async-shell-command (concat "recollindex -c "
@@ -27,17 +27,18 @@
                        "*recollindex output*"
                        "*recollindex error"))
 
-(defun sfs-recoll-config ()
+(defun sfs-index-config ()
   "Open the recoll configuration file, interactively creating one if necessary."
   (interactive)
-  (let (config)
-    (when (not (setq config (getenv "RECOLL_CONFDIR")))
-        (progn
-          (message "Set RECOLL_CONFDIR to the directory with your recoll.conf, e.g. ~/.recoll.")
-          (setq config (concat (getenv "HOME") "/.recoll"))))
-    (find-file (concat config "/recoll.conf"))))
+  (when (not (getenv "RECOLL_CONFDIR"))
+    (progn
+      (message "RECOLL_CONFDIR not set. Setting it to ~/.recoll.")
+      (setenv "RECOLL_CONFDIR" (concat (getenv "HOME") "/.recoll"))
+      (when (not (file-exists-p (getenv "RECOLL_CONFDIR")))
+        (mkdir (getenv "RECOLL_CONFDIR")))))
+  (find-file (concat (getenv "RECOLL_CONFDIR") "/recoll.conf")))
 
-(defun sfs-recoll-monitor ()
+(defun sfs-index-monitor ()
   "Start the monitoring files for indexing with recoll."
   (async-shell-command "recollindex -m"))
 
