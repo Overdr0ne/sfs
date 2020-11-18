@@ -135,7 +135,7 @@ Use `set-region-writeable' to remove this property."
 (defun sfs-add-favorite (id)
   "Save current query to ID under the sfs-favorites custom variable."
   (interactive "sEnter ID for query: ")
-  (sfs-id-add id (widget-value sfs--editor-widget) sfs-favorites)
+  (setf sfs-favorites (sfs-id-add id (widget-value sfs--editor-widget) sfs-favorites))
   sfs-favorites)
 
 (defun sfs--id-get (id rec-tree)
@@ -177,19 +177,16 @@ Use `set-region-writeable' to remove this property."
 
 (defun sfs-id-add (id val rec-tree)
   "Set sfs ID path to VAL."
-  (message "-------------------------")
   (let ((path (mapcar #'intern
                       (split-string id "\\."))))
     ;; (when (not rec-tree) (setq rec-tree sfs-recs))
-    (setf rec-tree (sfs--id-add path `(,val) rec-tree))
-    (message "5 %S" rec-tree))
-  (message "7 %S" rec-tree)
+    (setf rec-tree (sfs--id-add path `(,val) rec-tree)))
   rec-tree)
 
 (defun sfs-save-query (id)
   "Save current query to ID under the sfs-favorites custom variable."
   (interactive "sEnter a path.to.an.id for query: ")
-  (sfs-id-add id (widget-value sfs--editor-widget)))
+  (setf sfs-recs (sfs-id-add id (widget-value sfs--editor-widget) sfs-recs)))
 
 (defvar sfs-recollector-mode-map)
 (setq sfs-recollector-mode-map
@@ -258,12 +255,12 @@ https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.ht
     (widget-create 'push-button
                    :notify (lambda (&rest ignore)
                              (call-interactively #'sfs-add-favorite))
-                   "Add to favorites")
+                   "Favorite")
     (widget-insert "(C-c C-v)\n")
     (widget-create 'push-button
                    :notify (lambda (&rest ignore)
                              (call-interactively #'sfs-save-query))
-                   "Save to recollection.at.path")
+                   "Save")
     (widget-insert "(C-c C-s)")))
 
 (defun sfs--make-recollector-tui ()
@@ -290,7 +287,7 @@ https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.ht
   (sfs--make-recollector-tui))
 
 (defun sfs-recollect ()
-  "Go to SFS start page."
+  "Open the SFS recollector to interactively compose Recoll queries."
   (interactive)
   (sfs--make-recollector-tui))
 
@@ -356,49 +353,24 @@ https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.ht
 (define-derived-mode sfs-recollections-mode outline-mode "SFS Recollections"
   "Mode for SFS interactive recollections interface.")
 
-(defface sfs--read-only '((default . (:background "beige")))
-  "Face for `my-read-only-region'")
-
-(defun sfs--read-only-region (begin end)
-  "Make the marked region read-only.  See also `my-writeable-region'.
-
-Read-only text is given the face `sfs--read-only'."
-  (let ((inhibit-read-only t))
-    (with-silent-modifications
-      (add-text-properties begin end '(read-only t))
-      (let ((overlay (make-overlay begin end)))
-        (overlay-put overlay 'sfs--type 'read-only)
-        (overlay-put overlay 'face 'sfs--read-only)))))
-
-(defun sfs--writeable-region (begin end)
-  "Make the marked region writeable.  See also `my-read-only-region'."
-  (let ((inhibit-read-only t))
-    (with-silent-modifications
-      (remove-text-properties begin end '(read-only t))
-      (remove-overlays begin end 'sfs--type 'read-only))))
-
 (defun sfs--make-recollections-tui ()
   "Write the tui buffer."
   (let ((buffer (switch-to-buffer "*SFS Recollections*")))
-    (setq sfs-recs `((favorites . ,sfs-favorites)
-                     sfs--rec-recents
-                     sfs--rec-media))
+    (setf (alist-get 'favorites sfs-recs)
+          sfs-favorites)
     (with-current-buffer buffer
       (erase-buffer)
       (push-mark)
-      ;;TODO tags section
       (dolist (el sfs-recs)
         (cond ((listp el)
                (sfs--insert-rec-section el 0))
               ((symbol-function el)
                (sfs--insert-rec-section (funcall el) 0))
               (t (sfs--insert-rec-section (symbol-value el) 0))))
+      ;;TODO tags section
       (insert "* rec:custom")
       (push-mark)
       (insert "\n")
-      ;; (sfs--read-only-region (mark)
-      ;;                        (progn (pop-mark)
-      ;;                               (mark)))
       (sfs-recollections-mode))))
 
 (defun sfs--heading-depth (heading)
@@ -485,6 +457,7 @@ Read-only text is given the face `sfs--read-only'."
       (push `(,(intern id) ,(widget-value sfs--editor-widget)) sfs-favorites))))
 
 (defun sfs-recollections ()
+  "Open the SFS recollections TUI to interact with SFS recollections."
   "Go to SFS start page."
   (interactive)
   (sfs--make-recollections-tui))
