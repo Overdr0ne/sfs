@@ -32,7 +32,6 @@
 (defcustom sfs-favorites nil
   "An alist to save your favorite SFS queries, associating queries with symbols. These are then used to generate the collector menu, or can be recalled in the recollector."
   :group 'sfs)
-(setq sfs-favorites nil)
 
 (defcustom sfs-recs `((favorites . ,sfs-favorites)
                       sfs--rec-recents
@@ -40,9 +39,6 @@
   "A list of set recs to be displayed in the SFS collector TUI."
   :type  'sexp
   :group 'sfs)
-(setq sfs-recs `((favorites . ,sfs-favorites)
-                 sfs--rec-recents
-                 sfs--rec-media))
 
 (defun sfs--queries-or (query-list)
   "Create ORed query string from QUERY-LIST."
