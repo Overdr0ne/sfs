@@ -21,7 +21,6 @@
 
 (require 'sfs-recoll)
 (require 'dash)
-(require 'wid-edit)
 (require 'general)
 
 ;;; shared stuff
@@ -29,16 +28,14 @@
   "Customization group for SFS."
   :group 'Applications)
 
-(defcustom sfs-favorites nil
-  "An alist to save your favorite SFS queries, associating queries with symbols. These are then used to generate the collector menu, or can be recalled in the recollector."
-  :group 'sfs)
-
-(defcustom sfs-recs `((favorites . ,sfs-favorites)
-                      sfs--rec-recents
+(defcustom sfs-recs `(sfs--rec-recents
                       sfs--rec-media)
   "A list of set recs to be displayed in the SFS collector TUI."
   :type  'sexp
   :group 'sfs)
+
+(defconst sfs--researcher-buf "*SFS researcher*")
+(defconst sfs--recollector-buf "*SFS recollector*")
 
 (defun sfs--queries-or (query-list)
   "Create ORed query string from QUERY-LIST."
@@ -57,24 +54,6 @@
 (defface sfs-heading '((t (:bold t :underline t)))
   "Face used for displaying underlined bold emphasized text (_*word*_).")
 
-
-;; (defun sfs-ex-query ()
-;;   "Execute query builder query."
-;;   (interactive)
-;;   (let (sep)
-;;     (sfs-recoll (string-join (cdr sfs--query ())))))
-
-(defface sfs-logo
-  '((((class grayscale) (background light)) :foreground "LightGray" :weight bold)
-    (((class grayscale) (background dark))  :foreground "DimGray" :weight bold)
-    (((class color) (min-colors 88) (background light)) :foreground "Purple")
-    (((class color) (min-colors 88) (background dark))  :foreground "Cyan1")
-    (((class color) (min-colors 16) (background light)) :foreground "Purple")
-    (((class color) (min-colors 16) (background dark))  :foreground "Cyan")
-    (((class color) (min-colors 8)) :foreground "cyan" :weight bold)
-    (t (:bold t)))
-  "Face used for displaying underlined bold emphasized text (_*word*_).")
-
 (defun set-region-read-only (begin end)
   "Sets the read-only text property on the marked region.
 
@@ -84,7 +63,7 @@ Use `set-region-writeable' to remove this property."
   (with-silent-modifications
     (put-text-property begin end 'read-only t)))
 
-;;; Recollector
+;;; Researcher
 
 (defvar sfs--query "")
 
@@ -119,20 +98,15 @@ Use `set-region-writeable' to remove this property."
 
 ;; I need explicit function names to make help-modes useful(use which-key and edit names?), this macro automatically creates them to keep fields as single source of truth
 (defmacro sfs--def-prefix-fun (field)
-  "Generate a function for inserting FIELD prefix into the recollector."
+  "Generate a function for inserting FIELD prefix into the researcher."
   `(defun ,(intern (concat "sfs--prefix-" field)) ()
-     ,(concat "Add " field ": prefix in recollector")
+     ,(concat "Add " field ": prefix in researcher.")
      (interactive)
      (insert ,(concat field ":"))))
 (dolist (field (sfs--fields))
   (eval `(sfs--def-prefix-fun ,field)))
 
 (defvar sfs--editor-widget)
-(defun sfs-add-favorite (id)
-  "Save current query to ID under the sfs-favorites custom variable."
-  (interactive "sEnter ID for query: ")
-  (setf sfs-favorites (sfs-id-add id (widget-value sfs--editor-widget) sfs-favorites))
-  sfs-favorites)
 
 (defun sfs--id-get (id rec-tree)
   (if (and id rec-tree (listp rec-tree))
@@ -179,40 +153,46 @@ Use `set-region-writeable' to remove this property."
     (setf rec-tree (sfs--id-add path `(,val) rec-tree)))
   rec-tree)
 
-(defun sfs-save-query (id)
-  "Save current query to ID under the sfs-favorites custom variable."
+(defun sfs--record-query (id)
+  "Save current query to ID at.some.path."
   (interactive "sEnter a path.to.an.id for query: ")
   (setf sfs-recs (sfs-id-add id (widget-value sfs--editor-widget) sfs-recs)))
 
-(defvar sfs-recollector-mode-map)
-(setq sfs-recollector-mode-map
+(defun sfs--insert-rec (id)
+  "Insert rec with ID at point."
+  (interactive "sEnter a path.to.a.rec.id: ")
+  (insert (sfs-id-get id)))
+
+(defvar sfs-research-widget-mode-map)
+(setq sfs-research-widget-mode-map
       (let ((map (copy-keymap widget-field-keymap)))
         (define-key map (kbd "<C-return>") 'widget-field-activate)
         (define-key map (kbd "<return>") 'newline-and-indent)
         map))
 (general-define-key
- :keymaps 'sfs-recollector-mode-map
+ :keymaps 'sfs-research-widget-mode-map
+ "C-q" '(kill-current-buffer           :wk "quit window")
+ "C-r" '(sfs--record-query             :wk "record query:"))
+(general-define-key
+ :keymaps 'sfs-research-widget-mode-map
  :prefix "C-c"
  "C-a" '(sfs--prefix-author            :wk "prefix author:")
  "C-c" '(sfs--prefix-containerfilename :wk "prefix containerfilename:")
  "C-d" '(sfs--prefix-dir               :wk "prefix dir:")
  "C-e" '(sfs--prefix-ext               :wk "prefix ext:")
  "C-f" '(sfs--prefix-filename          :wk "prefix filename:")
+ "C-i" '(sfs--insert-rec               :wk "insert rec")
  "C-j" '(sfs--prefix-subject           :wk "prefix subject:")
  "C-k" '(sfs--prefix-keyword           :wk "prefix keyword:")
- "C-r" '(sfs--prefix-recipient         :wk "prefix recipient:")
  "C-l" '(sfs--prefix-rclcat            :wk "prefix rclcat:")
  "C-m" '(sfs--prefix-mime              :wk "prefix mime:")
- "C-o" '(sfs--insert-recollection      :wk "insert collection")
- "C-q" '(quit-window                   :wk "quit window")
- "C-s" '(sfs-save-query                :wk "prefix size:")
+ "C-p" '(sfs--prefix-recipient         :wk "prefix recipient:")
  "C-t" '(sfs--prefix-date              :wk "prefix date:")
- "C-v" '(sfs-add-favorite              :wk "save query")
  "C-z" '(sfs--prefix-size              :wk "prefix size:"))
-(define-derived-mode sfs-recollector-mode prog-mode "SFS"
-  "Major mode for SFS interactive recollector.
+(define-derived-mode sfs-research-mode prog-mode "SFS:res"
+  "Major mode for researching SFS recs.
 
-The recollector uses the Recoll query language, documented here:
+The researcher uses the Recoll query language, documented here:
 https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.html"
   (setq font-lock-defaults '(sfs--query-highlights)))
 
@@ -220,7 +200,7 @@ https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.ht
 (defun sfs-insert-logo ()
   "Make SFS logo in query builder buffer."
   ;; (widget-insert (f-read-text "./assets/graffiti.txt"))
-  (let ((logo "--- S*fs : recollector ---")
+  (let ((logo "--- S*fs : researcher ---")
         top bot)
     (setq top (point))
     (widget-insert logo)
@@ -228,66 +208,59 @@ https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.ht
     (widget-insert "\n")
     (setq sfs--logo-section (sfs-section-create top bot))))
 
-
-(defvar sfs--recollector-section)
-(defun sfs-make-section-recollector ()
+(defvar sfs--researcher-section)
+(defun sfs--researcher-make-section ()
   "Make the query section in the sfs TUI."
   (let (top bot)
     (setq top (point))
     (setq sfs--editor-widget
           (widget-create 'editable-field
-                         :keymap sfs-recollector-mode-map
+                         :keymap sfs-research-widget-mode-map
                          :action (lambda (wid &rest ignore)
                                    (sfs-recoll (widget-value wid)))
                          :notify (lambda (wid changed &rest ignore)
                                    (setq sfs--query (widget-value wid)))))
     (setq bot (point))
-    (setq sfs--recollector-section (sfs-section-create top bot))
+    (setq sfs--researcher-section (sfs-section-create top bot))
     (widget-create 'push-button
                    :notify (lambda (&rest ignore)
                              (sfs-recoll (widget-value sfs--editor-widget)))
-                   "Execute")
-    (widget-insert "(C-RET)\n")
+                   "(C-RET)rieve")
+    (widget-insert "\t")
     (widget-create 'push-button
                    :notify (lambda (&rest ignore)
-                             (call-interactively #'sfs-add-favorite))
-                   "Favorite")
-    (widget-insert "(C-c C-v)\n")
-    (widget-create 'push-button
-                   :notify (lambda (&rest ignore)
-                             (call-interactively #'sfs-save-query))
-                   "Save")
-    (widget-insert "(C-c C-s)")))
+                             (call-interactively #'sfs--record-query))
+                   "(C-r)ecord")))
 
-(defun sfs--make-recollector-tui ()
+(defun sfs--researcher-make-tui ()
   "Write the tui buffer."
   (let ((buffer
-         (switch-to-buffer "*SFS: recollector*")))
+         (switch-to-buffer sfs--researcher-buf)))
     (with-current-buffer buffer
       (kill-all-local-variables)
       (remove-overlays)
       (let ((inhibit-read-only t))
         (erase-buffer))
       (sfs-insert-logo)
-      (sfs-make-section-recollector)
-      (set-window-point (get-buffer-window "*SFS: recollector*")
-                        (sfs-section-top sfs--recollector-section))
+      (sfs--researcher-make-section)
+      (set-window-point (get-buffer-window sfs--researcher-buf)
+                        (sfs-section-top sfs--researcher-section))
       (widget-setup)
-      (sfs-recollector-mode)
+      (sfs-research-mode)
       (set-region-read-only (sfs-section-top sfs--logo-section)
                             (sfs-section-bot sfs--logo-section)))))
 
 (defun sfs--tui-run (f)
   "Call F in TUI context."
   (call-interactively f)
-  (sfs--make-recollector-tui))
+  (sfs--researcher-make-tui))
 
-(defun sfs-recollect ()
-  "Open the SFS recollector to interactively compose Recoll queries."
+(defun sfs-research ()
+  "Open the SFS researcher to recompose and record recollections."
   (interactive)
-  (sfs--make-recollector-tui))
+  (sfs--researcher-make-tui))
 
-;;; Recollections TUI
+;;; Recollect
 (defun sfs--rec-recents ()
   "Make the rec for recently touched files."
   (let ((recent-recollections '())
@@ -341,19 +314,17 @@ https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.ht
        (t (sfs--insert-heading rec (+ depth 1))))
     nil))
 
-(defvar sfs-recollections-mode-map)
-(setq sfs-recollections-mode-map
+(defvar sfs-recollect-mode-map)
+(setq sfs-recollect-mode-map
       (let ((map (make-sparse-keymap)))
         (define-key map (kbd "<return>") 'sfs-fetch-recollection-at-point)
         map))
-(define-derived-mode sfs-recollections-mode outline-mode "SFS Recollections"
+(define-derived-mode sfs-recollect-mode outline-mode "SFS:rec"
   "Mode for SFS interactive recollections interface.")
 
-(defun sfs--make-recollections-tui ()
+(defun sfs--recollector-make-tui ()
   "Write the tui buffer."
-  (let ((buffer (switch-to-buffer "*SFS Recollections*")))
-    (setf (alist-get 'favorites sfs-recs)
-          sfs-favorites)
+  (let ((buffer (switch-to-buffer sfs--recollector-buf)))
     (with-current-buffer buffer
       (erase-buffer)
       (push-mark)
@@ -367,7 +338,7 @@ https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.ht
       (insert "* rec:custom")
       (push-mark)
       (insert "\n")
-      (sfs-recollections-mode))))
+      (sfs-recollect-mode))))
 
 (defun sfs--heading-depth (heading)
   (if (string-equal (substring heading 0 1) "*")
@@ -450,13 +421,12 @@ https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.ht
     (if (alist-get id sfs-recs)
         (setf (alist-get (intern id) sfs-recs)
               `(,query-str))
-      (push `(,(intern id) ,(widget-value sfs--editor-widget)) sfs-favorites))))
+      (push `(,(intern id) ,(widget-value sfs--editor-widget)) sfs-recs))))
 
-(defun sfs-recollections ()
-  "Open the SFS recollections TUI to interact with SFS recollections."
-  "Go to SFS start page."
+(defun sfs-recollect ()
+  "Access SFS recollections in an interactive TUI."
   (interactive)
-  (sfs--make-recollections-tui))
+  (sfs--recollector-make-tui))
 
 (provide 'sfs-tui)
 ;;; sfs-tui.el ends here
