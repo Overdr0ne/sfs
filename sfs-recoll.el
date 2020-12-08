@@ -206,10 +206,10 @@ https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.ht
               :caller 'sfs-recoll-dired-ivy
               :action
               #'(lambda (a) (progn)
-                         (kill-new (cdr a))
-                         (print (concat "Entry\n---\n"
-                                        (cdr a)
-                                        "\n---\ncopied to kill-ring."))))))
+                  (kill-new (cdr a))
+                  (print (concat "Entry\n---\n"
+                                 (cdr a)
+                                 "\n---\ncopied to kill-ring."))))))
 
 (defun sfs--recoll-call (methodStr &rest args)
   "Send METHOD to the SFS python server with optional ARGS."
@@ -222,29 +222,32 @@ https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.ht
    methodStr
    (car args)))
 
-(defun sfs--recoll-search (queryStr)
-  (sfs--recoll-call "Query" queryStr))
+(defun sfs--recoll-search (query-str)
+  (sfs--recoll-call "Query" query-str))
 
-(defun sfs-recoll (queryStr)
+(defun sfs--recoll-find-urls (query-str)
   "Query the Recoll database and display the results in dired.
 QUERYSTR is a search string conforming to the Recoll Query Language."
-  (interactive "sQuery: ")
-  (if (not (string= queryStr ""))
-      (let (rawDB db index urls sfs-recollBuf)
-        (setq rawDB (sfs--recoll-search queryStr))
-        (if rawDB
-            (progn
-              (setq db
-                    (remove-if-not #'(lambda (entry)
-                                       (file-exists-p (sfs--recoll-get-field "url"
-                                                                             entry)))
-                                   rawDB))
-              (setq urls (sfs--recoll-collect-fields '("url") db))
-              (setq sfs-recollBuf (dired urls))
-              (set-buffer sfs-recollBuf)
-              (rename-buffer (concat "*SFS dired* : " (buffer-name)))
-              (sfs-dired-mode))
+  (if (not (string= query-str ""))
+      (let ((raw-db (sfs--recoll-search query-str)))
+        (if raw-db
+            (let ((db (remove-if-not #'(lambda (entry)
+                                         (file-exists-p (sfs--recoll-get-field "url"
+                                                                               entry)))
+                                     raw-db)))
+              (sfs--recoll-collect-fields '("url") db))
           (message "SFS: Couldn't find any results for your search...")))
+    (message "SFS: query string empty...")))
+
+(defun sfs-recoll (query-str)
+  "Search QUERYSTR with recoll and display results in dired."
+  (interactive "sQuery: ")
+  (if (not (string= query-str ""))
+      (let ((sfs-dired-buf (dired (sfs--recoll-find-urls query-str))))
+        (set-buffer sfs-dired-buf)
+        (rename-buffer (concat "*SFS dired* : " (buffer-name)))
+        (sfs-dired-mode)
+        (buffer-name))
     (message "SFS: query string empty...")))
 
 (defun sfs-recoll-exit ()

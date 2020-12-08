@@ -101,13 +101,16 @@ and dump the tag info with
 sfs-tag-get
 #+end_src
 
-* TODO SFS [1/6]
-- [X] Add a fancy start page with lots of suggested tag buttons, search history, help commands, etc. that can be conveniently added and removed and composed, sorta like a root directory, model it a bit like magit with really short keybindings.
-  + [X] The recollector is my answer to this
+* TODO SFS [0/7]
+- [-] Add a fancy start page with lots of suggested tag buttons, search history, help commands, etc. that can be conveniently added and removed and composed, sorta like a root directory, model it a bit like magit with really short keybindings.
+  + [-] the researcher still needs search history, suggestions and tags.
+  + [-] the recollector works like a root directory
 - [ ] parse infixed queries from the recollector into their AST representations such that they can be inserted into the recollections.
 - [-] Iterative filtering of results so it feels more like you are navigating your file-system, but non-hierarchically!
   + [-] I think the query system is fast enough that simply not deleting the query after search is good enough, though maybe I could have search easily configured to be performed in a separate window or section of the dired buffer to make it more clearly integrated, and dynamically update results...
+  + [ ] merge sfs-researcher buffer with dired results buffer somehow. Needs multiple major modes or maybe widgets.
 - [ ] completion integration for each tag
+- [ ] store queries in their AST form as files such that they can themselves use a derivative of the dired interface. This also provides a flexible, clear solution to persistence, and creates a single source of truth for building multiple perspectives on queries, inside or outside of emacs! I also like how this links query components together as independent nodes, rather than one monolithic structure, so you more conveniently manipulate subtrees without needing the whole tree.
 - [ ] Improve help to make the query language more obvious and intuitive
 - [-] Cross-platform...
   + [-] Linux
