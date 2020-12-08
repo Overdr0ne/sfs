@@ -170,11 +170,11 @@ Use `set-region-writeable' to remove this property."
         (define-key map (kbd "<return>") 'newline-and-indent)
         map))
 (general-define-key
- :keymaps 'sfs-research-widget-mode-map
- "C-q" '(kill-current-buffer           :wk "quit window")
+ :keymaps 'sfs-research-mode-map
+ "C-q" '(quit-window                   :wk "quit window")
  "C-r" '(sfs--record-query             :wk "record query:"))
 (general-define-key
- :keymaps 'sfs-research-widget-mode-map
+ :keymaps 'sfs-research-mode-map
  :prefix "C-c"
  "C-a" '(sfs--prefix-author            :wk "prefix author:")
  "C-c" '(sfs--prefix-containerfilename :wk "prefix containerfilename:")
@@ -187,6 +187,7 @@ Use `set-region-writeable' to remove this property."
  "C-l" '(sfs--prefix-rclcat            :wk "prefix rclcat:")
  "C-m" '(sfs--prefix-mime              :wk "prefix mime:")
  "C-p" '(sfs--prefix-recipient         :wk "prefix recipient:")
+ "C-q" '(quit-window        :wk "quit window")
  "C-t" '(sfs--prefix-date              :wk "prefix date:")
  "C-z" '(sfs--prefix-size              :wk "prefix size:"))
 (define-derived-mode sfs-research-mode prog-mode "SFS:res"
@@ -194,6 +195,7 @@ Use `set-region-writeable' to remove this property."
 
 The researcher uses the Recoll query language, documented here:
 https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.html"
+  (add-hook 'post-command-hook (lambda () (fit-window-to-buffer)) 0 t)
   (setq font-lock-defaults '(sfs--query-highlights)))
 
 (defvar sfs--logo-section)
@@ -208,6 +210,20 @@ https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.ht
     (widget-insert "\n")
     (setq sfs--logo-section (sfs-section-create top bot))))
 
+(defun sfs--researcher-retrieve (query-str)
+  "Run query through recoll and display results in a horizontal split."
+  (quit-window)
+  (let ((sfs-dired-buf
+         (dired-noselect (sfs--recoll-find-urls query-str))))
+    (when (get-buffer sfs-dired-buf)
+      (pop-to-buffer sfs-dired-buf
+		     '((display-buffer-same-window)))
+      (set-buffer sfs-dired-buf)
+      (rename-buffer (concat "*SFS dired : " (buffer-name) "*"))
+      (buffer-name)
+      (fit-window-to-buffer)
+      (sfs-dired-mode))))
+
 (defvar sfs--researcher-section)
 (defun sfs--researcher-make-section ()
   "Make the query section in the sfs TUI."
@@ -217,14 +233,14 @@ https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.ht
           (widget-create 'editable-field
                          :keymap sfs-research-widget-mode-map
                          :action (lambda (wid &rest ignore)
-                                   (sfs-recoll (widget-value wid)))
+                                   (sfs--researcher-retrieve (widget-value wid)))
                          :notify (lambda (wid changed &rest ignore)
                                    (setq sfs--query (widget-value wid)))))
     (setq bot (point))
     (setq sfs--researcher-section (sfs-section-create top bot))
     (widget-create 'push-button
                    :notify (lambda (&rest ignore)
-                             (sfs-recoll (widget-value sfs--editor-widget)))
+                             (sfs--researcher-retrieve (widget-value sfs--editor-widget)))
                    "(C-RET)rieve")
     (widget-insert "\t")
     (widget-create 'push-button
@@ -234,21 +250,29 @@ https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.ht
 
 (defun sfs--researcher-make-tui ()
   "Write the tui buffer."
-  (let ((buffer
-         (switch-to-buffer sfs--researcher-buf)))
-    (with-current-buffer buffer
-      (kill-all-local-variables)
-      (remove-overlays)
-      (let ((inhibit-read-only t))
-        (erase-buffer))
-      (sfs-insert-logo)
-      (sfs--researcher-make-section)
-      (set-window-point (get-buffer-window sfs--researcher-buf)
-                        (sfs-section-top sfs--researcher-section))
-      (widget-setup)
-      (sfs-research-mode)
-      (set-region-read-only (sfs-section-top sfs--logo-section)
-                            (sfs-section-bot sfs--logo-section)))))
+  (if (not (get-buffer sfs--researcher-buf))
+      (let ((buffer
+             (pop-to-buffer sfs--researcher-buf
+			    '((display-buffer-at-bottom)
+			      )
+			    )))
+	(with-current-buffer buffer
+	  (kill-all-local-variables)
+	  (remove-overlays)
+	  (let ((inhibit-read-only t))
+            (erase-buffer))
+	  (sfs-insert-logo)
+	  (sfs--researcher-make-section)
+	  (fit-window-to-buffer)
+	  (set-window-point (get-buffer-window sfs--researcher-buf)
+                            (sfs-section-top sfs--researcher-section))
+	  (widget-setup)
+	  (sfs-research-mode)
+	  (set-region-read-only (sfs-section-top sfs--logo-section)
+				(sfs-section-bot sfs--logo-section))))
+    (progn
+      (pop-to-buffer sfs--researcher-buf '((display-buffer-at-bottom)))
+      (fit-window-to-buffer))))
 
 (defun sfs--tui-run (f)
   "Call F in TUI context."
@@ -318,6 +342,7 @@ https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.ht
 (setq sfs-recollect-mode-map
       (let ((map (make-sparse-keymap)))
         (define-key map (kbd "<return>") 'sfs-fetch-recollection-at-point)
+        (define-key map (kbd "C-q") 'kill-this-buffer)
         map))
 (define-derived-mode sfs-recollect-mode outline-mode "SFS:rec"
   "Mode for SFS interactive recollections interface.")
