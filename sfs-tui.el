@@ -163,8 +163,8 @@ Use `set-region-writeable' to remove this property."
   (interactive "sEnter a path.to.a.rec.id: ")
   (insert (sfs-id-get id)))
 
-(defvar sfs-research-widget-mode-map)
-(setq sfs-research-widget-mode-map
+(defvar sfs-research-mode-map)
+(setq sfs-research-mode-map
       (let ((map (copy-keymap widget-field-keymap)))
         (define-key map (kbd "<C-return>") 'widget-field-activate)
         (define-key map (kbd "<return>") 'newline-and-indent)
@@ -231,7 +231,7 @@ https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.ht
     (setq top (point))
     (setq sfs--editor-widget
           (widget-create 'editable-field
-                         :keymap sfs-research-widget-mode-map
+                         :keymap sfs-research-mode-map
                          :action (lambda (wid &rest ignore)
                                    (sfs--researcher-retrieve (widget-value wid)))
                          :notify (lambda (wid changed &rest ignore)
@@ -268,10 +268,12 @@ https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.ht
                             (sfs-section-top sfs--researcher-section))
 	  (widget-setup)
 	  (sfs-research-mode)
-	  (set-region-read-only (sfs-section-top sfs--logo-section)
-				(sfs-section-bot sfs--logo-section))))
+	  ;; (set-region-read-only (sfs-section-top sfs--logo-section)
+	  ;; 			(sfs-section-bot sfs--logo-section))
+	  ))
     (progn
       (pop-to-buffer sfs--researcher-buf '((display-buffer-at-bottom)))
+      (sfs-research-mode)
       (fit-window-to-buffer))))
 
 (defun sfs--tui-run (f)
