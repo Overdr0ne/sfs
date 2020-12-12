@@ -156,7 +156,8 @@ Use `set-region-writeable' to remove this property."
 (defun sfs--record-query (id)
   "Save current query to ID at.some.path."
   (interactive "sEnter a path.to.an.id for query: ")
-  (setf sfs-recs (sfs-id-add id (widget-value sfs--editor-widget) sfs-recs)))
+  (setf sfs-recs (sfs-id-add id (string-join (split-string (widget-value sfs--editor-widget)) " ") sfs-recs))
+  (quit-window))
 
 (defun sfs--insert-rec (id)
   "Insert rec with ID at point."
@@ -171,7 +172,7 @@ Use `set-region-writeable' to remove this property."
         map))
 (general-define-key
  :keymaps 'sfs-research-mode-map
- "C-q" '(quit-window                   :wk "quit window")
+ "C-q" '(quit-window                   :wk "quit")
  "C-r" '(sfs--record-query             :wk "record query:"))
 (general-define-key
  :keymaps 'sfs-research-mode-map
@@ -187,7 +188,6 @@ Use `set-region-writeable' to remove this property."
  "C-l" '(sfs--prefix-rclcat            :wk "prefix rclcat:")
  "C-m" '(sfs--prefix-mime              :wk "prefix mime:")
  "C-p" '(sfs--prefix-recipient         :wk "prefix recipient:")
- "C-q" '(quit-window        :wk "quit window")
  "C-t" '(sfs--prefix-date              :wk "prefix date:")
  "C-z" '(sfs--prefix-size              :wk "prefix size:"))
 (define-derived-mode sfs-research-mode prog-mode "SFS:res"
