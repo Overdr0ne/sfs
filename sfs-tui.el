@@ -315,11 +315,10 @@ https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.ht
           ((comics . (,(sfs--queries-or (sfs--split-and-prefix "ext" "djvu cbr cbz cb7 cbt cba"))))
            (books . (,(sfs--queries-or (sfs--split-and-prefix "ext" "ibooks pdf epub pbd djvu azw azw3 kf8 kfx fb2 mobi opf"))))
            (documents . (,(sfs--queries-or (sfs--split-and-prefix "ext" "pdf doc docx txt tex"))))
-           (music . ("mime:audio"
-                     ,(sfs--queries-or (sfs--split-and-prefix "ext" "mp3 aac"))
+           (music . (,(sfs--queries-or (sfs--split-and-prefix "ext" "mp3 aac"))
                      (lossless ,(sfs--queries-or (sfs--split-and-prefix "ext" "wav flac aiff")))
                      (lossy ,(sfs--queries-or (sfs--split-and-prefix "ext" "mp3 aac")))))
-           (video . ("mime:video"))
+           (video . (,(sfs--split-and-prefix "ext" "mp4 mov wmv flv avi webm mkv")))
            (text . ("mime:text")))))
 
 (defun sfs--insert-heading (heading depth)
@@ -418,7 +417,6 @@ https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.ht
     (setq headings (split-string headings "\n"))
     (setq headings (remove-if (lambda (el) (string= el "")) headings))
     (first (sfs--headings-to-tree headings))))
-
 
 (defun sfs--tree-to-query (tree)
   (let ((root (first tree)))
