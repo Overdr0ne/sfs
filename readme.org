@@ -4,14 +4,13 @@
 - [[#introduction][Introduction]]
 - [[#installation][Installation]]
 - [[#indexing][Indexing]]
-- [[#searching][Searching]]
+- [[#searching][Researching]]
 - [[#recollections][Recollections]]
 - [[#dired][Dired]]
 - [[#sfs-tags][sfs-tags]]
 
 * Introduction
-SFS is a collection of inter-operating tools to make accessing and organizing your data faster and more ergonomic.
-
+SFS is a collection of inter-operating emacs tools to make accessing and organizing your data faster and more ergonomic.
 * Installation
 Install the python dependencies:
 #+begin_src
@@ -20,7 +19,7 @@ sudo pip3 install dbus-python PyGObject
 You will also need to install Recoll, go [[https://www.lesbonscomptes.com/recoll/download.html][here]].
 If you are using straight, you may need to add service.py to the :files parameter so it knows it is a dependency and puts it into the build directory.
 * Indexing
-Start by configuring what and how you want to index in your recoll.conf, or for convenience:
+You will need to build a Recoll index first, if you’ve already done so, skip this step. Start by configuring what and how you want to index in your recoll.conf, or for convenience:
 #+begin_src
 sfs-index-config
 #+end_src
@@ -30,18 +29,22 @@ sfs-index-build
 #+end_src
 You may run that [[https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.INDEXING.PERIODIC.html][periodically]], or have recoll index in [[https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.INDEXING.MONITOR.html][real time ]]with the command *recollindex -m*. I just put that command in my .xinitrc, but you could also set it up as a systemd service or something.
 Before you can search, you must index your filesystem with the program *recollindex*. There are a number of options here, but basically you can do this [[https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.INDEXING.PERIODIC.html][periodically]], or in [[https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.INDEXING.MONITOR.html][real time]], updating the index every time a file is modified!
-* Searching
-[[./sfs-res-demo.gif]]
-The way this works, search queries are forwarded to the python search service that's started when the package loads, and the results are used to populate a dired buffer.
+* Researching
+Research queries are forwarded to the python search service that's started when the package loads, and the results are used to populate a dired buffer.
 Queries may be entered in the minibuffer with:
 #+begin_src
 sfs-recoll
 #+end_src
 Or, in the full query editor with:
 #+begin_src
-sfs-recollect
+sfs-research
 #+end_src
+
+[[./sfs-res-demo.gif]]
+
 The editor provides a number of keybindings to quickly insert any of Recolls metadata tags, as well as save your queries to recollections described in the next section. When you save a query, it can inserted into the recollections hierarchy using '.' just like you would a file.at.some.path.
+
+[[./sfs-res-record-demo.gif]]
 
 Recoll search queries are fully documented [[https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.html][here]]. The syntax is very similar to an internet search engine.
 
@@ -74,7 +77,6 @@ The full list of field names for convenience:
 - *type* or *rclcat* for specifying the category (as in text/media/presentation/etc.)
 
 * Recollections
-[[./sfs-rec-demo.gif]]
 Recollections are basically just saved queries. They can also be thought of as file directories in that they can composed into hierarchies, but unlike directories they are defined by the semantics of the query language. See what I mean with:
 #+begin_src
 sfs-recollections
@@ -99,6 +101,9 @@ Because Recoll stores so much metadata to make files searchable, we get these ex
 #+begin_src
 sfs-dired-display-info
 #+end_src
+
+[[./sfs-dired-info-demo.gif]]
+
 This command is bound to <C-return> in sfs-dired mode, which is enabled automatically for sfs results. The command should work though in any dired buffer if the file is indexed. It basically just computes the file md5 hash and uses that to look up the properties for that file, falling back to looking up based on filename in case it doesn't find it.
 
 * sfs-tags
