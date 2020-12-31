@@ -19,7 +19,7 @@
 ;;
 ;;; Code:
 
-(defun sfs-index-build ()
+(defun sfs-reindex-build ()
   "Start the recoll indexer."
   (interactive)
   (async-shell-command (concat "recollindex -c "
@@ -27,7 +27,7 @@
                        "*recollindex output*"
                        "*recollindex error"))
 
-(defun sfs-index-config ()
+(defun sfs-reindex-config ()
   "Open the recoll configuration file, interactively creating one if necessary."
   (interactive)
   (when (not (getenv "RECOLL_CONFDIR"))
@@ -38,9 +38,9 @@
         (mkdir (getenv "RECOLL_CONFDIR")))))
   (find-file (concat (getenv "RECOLL_CONFDIR") "/recoll.conf")))
 
-(defun sfs-index-monitor ()
+(defun sfs-reindex-monitor ()
   "Start the monitoring files for indexing with recoll."
   (async-shell-command "recollindex -m"))
 
-(provide 'sfs-index)
+(provide 'sfs-reindex)
 ;;; sfs-index.el ends here
