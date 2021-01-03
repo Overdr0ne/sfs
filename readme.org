@@ -96,15 +96,15 @@ You can then execute the query at a point with <return>, much like you would ent
 #+end_src
 I haven't quite covered the entirety of the query language here, specifically the ',' and '/' operators are not covered. Queries entered here are also not yet saved between sessions.
 
-* Dired
+* Redired
 Because Recoll stores so much metadata to make files searchable, we get these extra file 'properties' for free. *If it is indexed*, in dired you can access these properties for the file at point using
 #+begin_src
-sfs-dired-display-info
+sfs-represent
 #+end_src
 
-[[./sfs-dired-info-demo.gif]]
+[[./sfs-redir-demo.gif]]
 
-This command is bound to <C-return> in sfs-dired mode, which is enabled automatically for sfs results. The command should work though in any dired buffer if the file is indexed. It basically just computes the file md5 hash and uses that to look up the properties for that file, falling back to looking up based on filename in case it doesn't find it.
+This command is bound to <C-return> in sfs-redir-mode, which is enabled automatically for sfs results. The command should work though in any dired buffer if the file is indexed. (It basically just computes the file md5 hash and uses that to look up the properties for that file, falling back to looking up based on filename in case it doesn't find it. And because recoll does not store the contiguous filename, this may find some other file with the same name but with two parent directories reversed, like /usr/bin/test and /bin/usr/test.)
 
 * sfs-tags
 *unfinished* sfs-tags is a set of utilities for tagging your data, primarily unix files using extended attributes. In a dired directory, tag the file at point with
