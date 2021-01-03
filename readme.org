@@ -10,7 +10,7 @@
 - [[#sfs-tags][sfs-tags]]
 
 * Introduction
-SFS is a collection of inter-operating emacs tools to make accessing and organizing your data faster and more ergonomic.
+SFS is a collection of inter-operating emacs tools to make accessing and organizing your data faster and more ergonomic. It is largely powered by the Recoll file-indexing tool.
 * Installation
 Install the python dependencies:
 #+begin_src
@@ -45,6 +45,7 @@ sfs-research
 The editor provides a number of keybindings to quickly insert any of Recolls metadata tags, as well as save your queries to recollections described in the next section. When you save a query, it can inserted into the recollections hierarchy using '.' just like you would a file.at.some.path.
 
 [[./sfs-res-rec-demo.gif]]
+(the noticable delay here is due almost entirely to dired)
 
 Recoll search queries are fully documented [[https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.html][here]]. The syntax is very similar to an internet search engine.
 
