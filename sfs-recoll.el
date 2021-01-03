@@ -106,7 +106,8 @@ QUERYSTR is a search string conforming to the Recoll Query Language."
                                          (file-exists-p (sfs--recoll-get-field "url"
                                                                                entry)))
                                      raw-db)))
-              (sfs--recoll-collect-fields '("url") db))
+              (sfs--recoll-collect-fields '("url") db)
+	      )
           (message "SFS: Couldn't find any results for your search...")))
     (message "SFS: query string empty...")))
 
