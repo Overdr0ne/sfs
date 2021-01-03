@@ -21,11 +21,11 @@ If you are using straight, you may need to add service.py to the :files paramete
 * Indexing
 You will need to build a Recoll index first, if you’ve already done so, skip this step. Start by configuring what and how you want to index in your recoll.conf, or for convenience:
 #+begin_src
-sfs-index-config
+sfs-reindex-config
 #+end_src
 Then, run the indexer, using the *recollindex* command, or within emacs:
 #+begin_src
-sfs-index-build
+sfs-reindex-build
 #+end_src
 You may run that [[https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.INDEXING.PERIODIC.html][periodically]], or have recoll index in [[https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.INDEXING.MONITOR.html][real time ]]with the command *recollindex -m*. I just put that command in my .xinitrc, but you could also set it up as a systemd service or something.
 Before you can search, you must index your filesystem with the program *recollindex*. There are a number of options here, but basically you can do this [[https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.INDEXING.PERIODIC.html][periodically]], or in [[https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.INDEXING.MONITOR.html][real time]], updating the index every time a file is modified!
@@ -44,7 +44,7 @@ sfs-research
 
 The editor provides a number of keybindings to quickly insert any of Recolls metadata tags, as well as save your queries to recollections described in the next section. When you save a query, it can inserted into the recollections hierarchy using '.' just like you would a file.at.some.path.
 
-[[./sfs-res-record-demo.gif]]
+[[./sfs-res-rec-demo.gif]]
 
 Recoll search queries are fully documented [[https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.html][here]]. The syntax is very similar to an internet search engine.
 
@@ -81,6 +81,7 @@ Recollections are basically just saved queries. They can also be thought of as f
 #+begin_src
 sfs-recollections
 #+end_src
+[[./sfs-recollect-demo.gif]]
 You can then execute the query at a point with <return>, much like you would enter a directory in dired or something. So when I make a recollection called 'recent images', I can actually make sure it contains all and only image files that I saved in the past week or something, which is usually what people want when they define their file hierarchies. The hierarchy here is actually just an alternative representation of queries themselves, in other words, it is the AST representation of recoll search queries. So if you like, you can just write in a query in its hierarchical form and execute it, like so:
 #+begin_src
 \* OR
@@ -94,15 +95,16 @@ You can then execute the query at a point with <return>, much like you would ent
 \*** date:2019/
 \** inline test query type:text
 #+end_src
-I haven't quite covered the entirety of the query language here, specifically the ',' and '/' operators are not covered. Queries entered here are also not yet saved between sessions.
+[[./sfs-rec-custom-demo.gif]]
+*This is still an experimental feature, and I haven't quite covered the entirety of the query language here, specifically the ',' and '/' operators are not covered. Queries entered here are also not yet saved between sessions.*
 
-* Dired
+* Redir
 Because Recoll stores so much metadata to make files searchable, we get these extra file 'properties' for free. *If it is indexed*, in dired you can access these properties for the file at point using
 #+begin_src
-sfs-dired-display-info
+sfs-represent
 #+end_src
 
-[[./sfs-dired-info-demo.gif]]
+[[./sfs-redir-demo.gif]]
 
 This command is bound to <C-return> in sfs-dired mode, which is enabled automatically for sfs results. The command should work though in any dired buffer if the file is indexed. It basically just computes the file md5 hash and uses that to look up the properties for that file, falling back to looking up based on filename in case it doesn't find it.
 
