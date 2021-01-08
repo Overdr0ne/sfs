@@ -295,7 +295,7 @@ https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.ht
 (defun sfs--record-query (id)
   "Save current query to ID at.some.path."
   (interactive "sEnter a path.to.an.id for query: ")
-  (setf sfs-recs (sfs-id-add id (string-join (split-string (widget-value sfs--editor-widget)) " ") sfs-recs))
+  (customize-set-variable 'sfs-recs (sfs-id-add id (string-join (split-string (widget-value sfs--editor-widget)) " ") sfs-recs))
   (quit-window))
 
 (defun sfs--insert-rec (id)
