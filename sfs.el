@@ -23,7 +23,7 @@
 
 ;;; Code:
 
-(require 'sfs-index)
+(require 'sfs-reindex)
 (require 'sfs-recoll)
 (require 'sfs-tag)
 (require 'sfs-tui)

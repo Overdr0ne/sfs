@@ -10,7 +10,7 @@
 - [[#sfs-tags][sfs-tags]]
 
 * Introduction
-SFS is a collection of inter-operating emacs tools to make accessing and organizing your data faster and more ergonomic.
+SFS is a collection of inter-operating emacs tools to make accessing and organizing your data faster and more ergonomic. It is largely powered by the Recoll file-indexing tool.
 * Installation
 Install the python dependencies:
 #+begin_src
@@ -21,11 +21,11 @@ If you are using straight, you may need to add service.py to the :files paramete
 * Indexing
 You will need to build a Recoll index first, if you’ve already done so, skip this step. Start by configuring what and how you want to index in your recoll.conf, or for convenience:
 #+begin_src
-sfs-index-config
+sfs-reindex-config
 #+end_src
 Then, run the indexer, using the *recollindex* command, or within emacs:
 #+begin_src
-sfs-index-build
+sfs-reindex-build
 #+end_src
 You may run that [[https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.INDEXING.PERIODIC.html][periodically]], or have recoll index in [[https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.INDEXING.MONITOR.html][real time ]]with the command *recollindex -m*. I just put that command in my .xinitrc, but you could also set it up as a systemd service or something.
 Before you can search, you must index your filesystem with the program *recollindex*. There are a number of options here, but basically you can do this [[https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.INDEXING.PERIODIC.html][periodically]], or in [[https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.INDEXING.MONITOR.html][real time]], updating the index every time a file is modified!

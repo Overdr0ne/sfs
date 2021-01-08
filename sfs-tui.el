@@ -59,12 +59,151 @@
 
 Use `set-region-writeable' to remove this property."
   ;; See https://stackoverflow.com/questions/7410125
-  (interactive "r")
+  ;; (interactive "r")
   (with-silent-modifications
     (put-text-property begin end 'read-only t)))
 
-;;; Researcher
+;;; Simple Recoll
+(defun sfs-recoll (query-str)
+  "Search QUERYSTR with recoll and display results in dired."
+  (interactive "sQuery: ")
+  (if (not (string= query-str ""))
+      (let ((sfs-dired-buf (dired (sfs--recoll-find-urls query-str))))
+        (set-buffer sfs-dired-buf)
+        (rename-buffer (concat "*SFS dired* : " (buffer-name)))
+        (buffer-name)
+	(sfs-redir-mode))
+    (message "SFS: query string empty...")))
 
+;;; Representer
+(defvar sfs--recoll-fields)
+(setq sfs--recoll-fields
+      '("rcludi"
+        "fbytes"
+        "dbytes"
+        "sig"
+        "url"
+        "abstract"
+        "filename"
+        "relevancyrating"
+        "mtype"
+        "origcharset"
+        "mtime"
+        "fmtime"
+        "pcbytes"))
+(defvar sfs-representation-highlights nil "First element for `font-lock-defaults'.")
+(dolist (field sfs--recoll-fields)
+  (add-to-list 'sfs-representation-highlights `(,field . font-lock-keyword-face)))
+
+(defvar sfs-representation-mode-map)
+(setq sfs-representation-mode-map
+      (let ((map (make-sparse-keymap)))
+        (define-key map (kbd "q") 'quit-window)
+        map))
+(define-derived-mode sfs-represent-mode fundamental-mode "SFS:rep"
+  "Major mode for SFS interactive query editor.
+
+The query editor uses the Recoll query language, documented here:
+https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.html"
+  (hl-line-mode)
+  (setq font-lock-defaults '(sfs-representation-highlights)))
+
+(defun sfs-represent ()
+  "Display a tooltip showing metadata about the file at POINT."
+  (interactive)
+  (let ((entry (sfs--recoll-file-properties (dired-get-filename)))
+        (buffer (get-buffer-create "*SFS represent*"))
+        (filename (dired-get-filename))
+        str)
+    (if entry
+        (progn
+          (setq str (sfs--recoll-property-str entry))
+          (with-current-buffer buffer
+            (visual-line-mode 1)
+            ;; (auto-fill-mode 1)
+            (let ((inhibit-read-only t))
+              (erase-buffer)
+              (insert str))
+	    (pop-to-buffer buffer
+			   '((display-buffer-in-side-window)
+			     (side . right)
+			     (slot . 0)))
+	    (fit-window-to-buffer)
+            (sfs-represent-mode)
+	    (set-window-point (get-buffer-window buffer) 0)
+            ;; (display-buffer buffer)
+	    ))
+      (message "This file has not been indexed by Recoll..."))))
+
+;;; Redirectory
+(defvar sfs-redir-mode-map (make-keymap) "SFS redir mode keymap.")
+(define-key sfs-redir-mode-map
+  (kbd "<C-return>") 'sfs-represent)
+(define-minor-mode sfs-redir-mode
+  "Minor mode for sfs results in dired."
+  nil
+  " SFS:red"
+  :keymap sfs-redir-mode-map)
+
+(defun sfs-redisplay-info-hook (entry)
+  (let ((buffer (get-buffer-create " *Minibuf*")) str)
+    (setq str (sfs-recoll-build-tooltip entry))
+    (with-current-buffer buffer
+      (visual-line-mode 1)
+      (auto-fill-mode 1)
+      (erase-buffer)
+      (insert str)
+      (display-buffer buffer)))
+  (select-window (get-mru-window)))
+
+(defmacro minibuffer-quit-and-run (&rest body)
+  "Quit the minibuffer and run BODY afterwards."
+  `(progn
+     (put 'quit 'error-message "")
+     (run-at-time nil nil
+                  (lambda ()
+                    (put 'quit 'error-message "Quit")
+                    ,@body))
+     (minibuffer-keyboard-quit)))
+
+;; (defun sfs-dired-next-line ()
+;;   (interactive)
+;;   "Go to next line, and display file info in minibuffer."
+;;   (minibuffer-quit-and-run
+;;    (dired-next-line 1)
+;;    (sfs-display-info)))
+;; ;; (substitute-key-definition 'dired-next-line 'sfs-dired-next-line dired-mode-map)
+
+;; (defun sfs-dired-previous-line ()
+;;   (interactive)
+;;   "Go to previous line, and display file info in minibuffer."
+;;   (minibuffer-quit-and-run
+;;    (dired-previous-line 1)
+;;    (sfs-display-info)))
+;; ;; (substitute-key-definition 'dired-previous-line 'sfs-dired-previous-line dired-mode-map)
+
+(defun sfs-redired-tooltip ()
+  "Display a tooltip showing metadata about the file at POINT."
+  (interactive)
+  (let ((entry (sfs--recoll-file-properties (dired-get-filename))))
+    (popup-tip (sfs--recoll-property-str entry) :point(line-beginning-position))))
+
+(defun sfs-redired-ivy ()
+  "Operate on file metadata at POINT."
+  (interactive)
+  (let (entry)
+    (setq entry
+          (sfs--recoll-file-properties (dired-get-filename)))
+    (ivy-read "Find Property: " entry
+              :caller 'sfs-recoll-dired-ivy
+              :action
+              #'(lambda (a) (progn)
+                  (kill-new (cdr a))
+                  (print (concat "Entry\n---\n"
+                                 (cdr a)
+                                 "\n---\ncopied to kill-ring."))))))
+
+;;; Researcher
 (defvar sfs--query "")
 
 (defun sfs--fields ()
@@ -156,7 +295,7 @@ Use `set-region-writeable' to remove this property."
 (defun sfs--record-query (id)
   "Save current query to ID at.some.path."
   (interactive "sEnter a path.to.an.id for query: ")
-  (setf sfs-recs (sfs-id-add id (string-join (split-string (widget-value sfs--editor-widget)) " ") sfs-recs))
+  (customize-set-variable 'sfs-recs (sfs-id-add id (string-join (split-string (widget-value sfs--editor-widget)) " ") sfs-recs))
   (quit-window))
 
 (defun sfs--insert-rec (id)
@@ -168,7 +307,7 @@ Use `set-region-writeable' to remove this property."
 (setq sfs-research-mode-map
       (let ((map (copy-keymap widget-field-keymap)))
         (define-key map (kbd "<C-return>") 'widget-field-activate)
-        (define-key map (kbd "<return>") 'newline-and-indent)
+        ;; (define-key map (kbd "<return>") 'newline-and-indent)
         map))
 (general-define-key
  :keymaps 'sfs-research-mode-map
@@ -222,7 +361,7 @@ https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.ht
       (rename-buffer (concat "*SFS dired : " (buffer-name) "*"))
       (buffer-name)
       (fit-window-to-buffer)
-      (sfs-dired-mode))))
+      (sfs-redir-mode))))
 
 (defvar sfs--researcher-section)
 (defun sfs--researcher-make-section ()
@@ -272,7 +411,8 @@ https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.ht
 	  ;; 			(sfs-section-bot sfs--logo-section))
 	  ))
     (progn
-      (pop-to-buffer sfs--researcher-buf '((display-buffer-at-bottom)))
+      (pop-to-buffer sfs--researcher-buf
+		     '((display-buffer-at-bottom)))
       (sfs-research-mode)
       (fit-window-to-buffer))))
 
@@ -318,7 +458,7 @@ https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.ht
            (music . (,(sfs--queries-or (sfs--split-and-prefix "ext" "mp3 aac"))
                      (lossless ,(sfs--queries-or (sfs--split-and-prefix "ext" "wav flac aiff")))
                      (lossy ,(sfs--queries-or (sfs--split-and-prefix "ext" "mp3 aac")))))
-           (video . (,(sfs--split-and-prefix "ext" "mp4 mov wmv flv avi webm mkv")))
+           (video . ,(sfs--split-and-prefix "ext" "mp4 mov wmv flv avi webm mkv"))
            (text . ("mime:text")))))
 
 (defun sfs--insert-heading (heading depth)
@@ -342,29 +482,59 @@ https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.ht
 (defvar sfs-recollect-mode-map)
 (setq sfs-recollect-mode-map
       (let ((map (make-sparse-keymap)))
-        (define-key map (kbd "<return>") 'sfs-fetch-recollection-at-point)
+        (define-key map (kbd "<S-return>") 'sfs-fetch-recollection-at-point)
         (define-key map (kbd "C-q") 'kill-this-buffer)
         map))
-(define-derived-mode sfs-recollect-mode outline-mode "SFS:rec"
-  "Mode for SFS interactive recollections interface.")
+(general-define-key
+ :keymaps 'sfs-recollect-mode-map
+ :prefix "C-c"
+ "C-a" '(sfs--prefix-author            :wk "prefix author:")
+ "C-c" '(sfs--prefix-containerfilename :wk "prefix containerfilename:")
+ "C-d" '(sfs--prefix-dir               :wk "prefix dir:")
+ "C-e" '(sfs--prefix-ext               :wk "prefix ext:")
+ "C-f" '(sfs--prefix-filename          :wk "prefix filename:")
+ "C-i" '(sfs--insert-rec               :wk "insert rec")
+ "C-j" '(sfs--prefix-subject           :wk "prefix subject:")
+ "C-k" '(sfs--prefix-keyword           :wk "prefix keyword:")
+ "C-l" '(sfs--prefix-rclcat            :wk "prefix rclcat:")
+ "C-m" '(sfs--prefix-mime              :wk "prefix mime:")
+ "C-p" '(sfs--prefix-recipient         :wk "prefix recipient:")
+ "C-t" '(sfs--prefix-date              :wk "prefix date:")
+ "C-z" '(sfs--prefix-size              :wk "prefix size:"))
+(define-derived-mode sfs-recollect-mode org-mode "SFS:rec"
+  "Mode for SFS interactive recollections interface."
+  (hide-sublevels 2)
+  (setq-local fit-window-to-buffer-horizontally t)
+  ;; (setq-local window-max-width 35)
+  (add-hook 'post-command-hook
+	    (lambda () (fit-window-to-buffer nil 999 0 35))
+	    0 t)
+  (visual-line-mode)
+  (fit-window-to-buffer nil 999 0 35))
 
 (defun sfs--recollector-make-tui ()
   "Write the tui buffer."
-  (let ((buffer (switch-to-buffer sfs--recollector-buf)))
-    (with-current-buffer buffer
-      (erase-buffer)
-      (push-mark)
-      (dolist (el sfs-recs)
-        (cond ((listp el)
-               (sfs--insert-rec-section el 0))
-              ((symbol-function el)
-               (sfs--insert-rec-section (funcall el) 0))
-              (t (sfs--insert-rec-section (symbol-value el) 0))))
-      ;;TODO tags section
-      (insert "* rec:custom")
-      (push-mark)
-      (insert "\n")
-      (sfs-recollect-mode))))
+  (pop-to-buffer sfs--recollector-buf
+		 '((display-buffer-in-side-window)
+		   (side . left)
+		   (slot . 0)))
+  (with-current-buffer sfs--recollector-buf
+    (erase-buffer)
+    ;; (push-mark)
+    (dolist (el sfs-recs)
+      (cond ((listp el)
+             (sfs--insert-rec-section el 0))
+            ((symbol-function el)
+             (sfs--insert-rec-section (funcall el) 0))
+            (t (sfs--insert-rec-section (symbol-value el) 0))))
+    ;; (set-region-read-only (mark) (point))
+    ;;TODO tags section
+    (insert "* rec:custom")
+    ;; (push-mark)
+    (insert "\n")
+    (set-window-point (get-buffer-window sfs--recollector-buf)
+                      0)
+    (sfs-recollect-mode)))
 
 (defun sfs--heading-depth (heading)
   (if (string-equal (substring heading 0 1) "*")
@@ -434,15 +604,24 @@ https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.ht
                    ")"))
           (t root))))
 
-(defun sfs-fetch-recollection-at-point ()
+(defun sfs-recollect-at-point ()
   "Fetch the recollection under the heading at point."
   (interactive)
-  (sfs-recoll (sfs--tree-to-query (sfs--heading-at-point-to-tree))))
+  (save-excursion
+    (beginning-of-line)
+    (let ((buf (dired-noselect
+		(sfs--recoll-find-urls
+		 (sfs--tree-to-query
+		  (sfs--heading-at-point-to-tree))))))
+      (quit-window)
+      (pop-to-buffer buf
+		     '((display-buffer-same-window)))
+      (sfs-redir-mode))))
 
-(defun sfs-save-recollection-at-point (id)
+(defun sfs-record-recollection-at-point (id)
   "Save the recollection at point to rec ID."
   (interactive "sEnter id path: ")
-  (let ((query-str (sfs-fetch-recollection-at-point)))
+  (let ((query-str (sfs-recollect-at-point)))
     (if (alist-get id sfs-recs)
         (setf (alist-get (intern id) sfs-recs)
               `(,query-str))
