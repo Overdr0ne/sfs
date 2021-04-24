@@ -1,4 +1,8 @@
 (defun evil-collection-sfs-setup ()
+  "Sets up keybindings and initial states for SFS."
+  (interactive)
+  (evil-set-initial-state 'sfs-research-mode 'insert)
+
   (evil-collection-define-key '(normal insert) 'sfs-research-mode-map
     (kbd "C-q")        'quit-window
     (kbd "<C-return>") 'widget-field-activate
