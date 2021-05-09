@@ -1,6 +1,8 @@
 #+TITLE: SFS (Search File System)
 #+OPTIONS: toc:2
 
+(Just in case anyone is watching this for activity, I have paused direct development here to familiarize myself with guix/nix in an attempt to create a simpler, reproducible installation process for this and other packages with non-trivial external dependencies. However, do feel free to submit any issues you may be having; I continue to use sfs myself, and will try to support anyone wanting to try things out.)
+
 - [[#introduction][Introduction]]
 - [[#installation][Installation]]
 - [[#indexing][Indexing]]
