@@ -75,30 +75,28 @@ Use `set-region-writeable' to remove this property."
     (message "SFS: query string empty...")))
 
 ;;; Representer
-(defvar sfs--recoll-fields)
-(setq sfs--recoll-fields
-      '("rcludi"
-        "fbytes"
-        "dbytes"
-        "sig"
-        "url"
-        "abstract"
-        "filename"
-        "relevancyrating"
-        "mtype"
-        "origcharset"
-        "mtime"
-        "fmtime"
-        "pcbytes"))
+(defvar sfs--recoll-fields
+  '("rcludi"
+    "fbytes"
+    "dbytes"
+    "sig"
+    "url"
+    "abstract"
+    "filename"
+    "relevancyrating"
+    "mtype"
+    "origcharset"
+    "mtime"
+    "fmtime"
+    "pcbytes"))
 (defvar sfs-representation-highlights nil "First element for `font-lock-defaults'.")
 (dolist (field sfs--recoll-fields)
   (add-to-list 'sfs-representation-highlights `(,field . font-lock-keyword-face)))
 
-(defvar sfs-representation-mode-map)
-(setq sfs-representation-mode-map
-      (let ((map (make-sparse-keymap)))
-        (define-key map (kbd "q") 'quit-window)
-        map))
+(defvar sfs-representation-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "q") 'quit-window)
+    map))
 (define-derived-mode sfs-represent-mode fundamental-mode "SFS:rep"
   "Major mode for SFS interactive query editor.
 
@@ -302,11 +300,8 @@ https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.ht
   (interactive "sEnter a path.to.a.rec.id: ")
   (insert (sfs-id-get id)))
 
-(defvar sfs-research-mode-map nil
-  "Local keymap for SFS Research mode buffers.")
-(setq  sfs-research-mode-map
+(defvar sfs-research-mode-map
   (let ((map (copy-keymap widget-field-keymap)))
-    ;; (set-keymap-parent map special-mode-map)
     (define-key map (kbd "<C-return>") 'widget-field-activate)
     (define-key map "\C-q" 'quit-window)
     (define-key map "\C-r" 'sfs--record-query)
@@ -323,7 +318,8 @@ https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.ht
     (define-key map "\C-c\C-p" 'sfs--prefix-recipient)
     (define-key map "\C-c\C-t" 'sfs--prefix-date)
     (define-key map "\C-c\C-z" 'sfs--prefix-size)
-    map))
+    map)
+  "Local keymap for SFS Research mode buffers.")
 (define-derived-mode sfs-research-mode prog-mode "SFS:res"
   "Major mode for researching SFS recs.
 
@@ -474,8 +470,7 @@ https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.ht
        (t (sfs--insert-heading rec (+ depth 1))))
     nil))
 
-(defvar sfs-recollect-mode-map)
-(setq  sfs-recollect-mode-map
+(defvar sfs-recollect-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "<S-return>") 'sfs-recollect-at-point)
     (define-key map "\C-q" 'quit-window)
