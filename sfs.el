@@ -27,7 +27,6 @@
 (require 'sfs-recoll)
 (require 'sfs-tag)
 (require 'sfs-tui)
-(require 'evil-collection-sfs)
 
 (let ((service-filename
        (concat (file-name-directory load-file-name) "service.py")))

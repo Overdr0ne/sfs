@@ -21,7 +21,6 @@
 
 (require 'sfs-recoll)
 (require 'dash)
-(require 'general)
 
 ;;; shared stuff
 (defgroup sfs nil
@@ -303,32 +302,28 @@ https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.ht
   (interactive "sEnter a path.to.a.rec.id: ")
   (insert (sfs-id-get id)))
 
-(defvar sfs-research-mode-map)
-(setq sfs-research-mode-map
-      (let ((map (copy-keymap widget-field-keymap)))
-        (define-key map (kbd "<C-return>") 'widget-field-activate)
-        ;; (define-key map (kbd "<return>") 'newline-and-indent)
-        map))
-(general-define-key
- :keymaps 'sfs-research-mode-map
- "C-q" '(quit-window                   :wk "quit")
- "C-r" '(sfs--record-query             :wk "record query:"))
-(general-define-key
- :keymaps 'sfs-research-mode-map
- :prefix "C-c"
- "C-a" '(sfs--prefix-author            :wk "prefix author:")
- "C-c" '(sfs--prefix-containerfilename :wk "prefix containerfilename:")
- "C-d" '(sfs--prefix-dir               :wk "prefix dir:")
- "C-e" '(sfs--prefix-ext               :wk "prefix ext:")
- "C-f" '(sfs--prefix-filename          :wk "prefix filename:")
- "C-i" '(sfs--insert-rec               :wk "insert rec")
- "C-j" '(sfs--prefix-subject           :wk "prefix subject:")
- "C-k" '(sfs--prefix-keyword           :wk "prefix keyword:")
- "C-l" '(sfs--prefix-rclcat            :wk "prefix rclcat:")
- "C-m" '(sfs--prefix-mime              :wk "prefix mime:")
- "C-p" '(sfs--prefix-recipient         :wk "prefix recipient:")
- "C-t" '(sfs--prefix-date              :wk "prefix date:")
- "C-z" '(sfs--prefix-size              :wk "prefix size:"))
+(defvar sfs-research-mode-map nil
+  "Local keymap for SFS Research mode buffers.")
+(setq  sfs-research-mode-map
+  (let ((map (copy-keymap widget-field-keymap)))
+    ;; (set-keymap-parent map special-mode-map)
+    (define-key map (kbd "<C-return>") 'widget-field-activate)
+    (define-key map "\C-q" 'quit-window)
+    (define-key map "\C-r" 'sfs--record-query)
+    (define-key map "\C-c\C-a"  'sfs--prefix-author)
+    (define-key map "\C-c\C-c" 'sfs--prefix-containerfilename)
+    (define-key map "\C-c\C-d" 'sfs--prefix-dir)
+    (define-key map "\C-c\C-e" 'sfs--prefix-ext)
+    (define-key map "\C-c\C-f" 'sfs--prefix-filename)
+    (define-key map "\C-c\C-i" 'sfs--insert-rec)
+    (define-key map "\C-c\C-j" 'sfs--prefix-subject)
+    (define-key map "\C-c\C-k" 'sfs--prefix-keyword)
+    (define-key map "\C-c\C-l" 'sfs--prefix-rclcat)
+    (define-key map "\C-c\C-m" 'sfs--prefix-mime)
+    (define-key map "\C-c\C-p" 'sfs--prefix-recipient)
+    (define-key map "\C-c\C-t" 'sfs--prefix-date)
+    (define-key map "\C-c\C-z" 'sfs--prefix-size)
+    map))
 (define-derived-mode sfs-research-mode prog-mode "SFS:res"
   "Major mode for researching SFS recs.
 
@@ -480,27 +475,25 @@ https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.ht
     nil))
 
 (defvar sfs-recollect-mode-map)
-(setq sfs-recollect-mode-map
-      (let ((map (make-sparse-keymap)))
-        (define-key map (kbd "<S-return>") 'sfs-fetch-recollection-at-point)
-        (define-key map (kbd "C-q") 'kill-this-buffer)
-        map))
-(general-define-key
- :keymaps 'sfs-recollect-mode-map
- :prefix "C-c"
- "C-a" '(sfs--prefix-author            :wk "prefix author:")
- "C-c" '(sfs--prefix-containerfilename :wk "prefix containerfilename:")
- "C-d" '(sfs--prefix-dir               :wk "prefix dir:")
- "C-e" '(sfs--prefix-ext               :wk "prefix ext:")
- "C-f" '(sfs--prefix-filename          :wk "prefix filename:")
- "C-i" '(sfs--insert-rec               :wk "insert rec")
- "C-j" '(sfs--prefix-subject           :wk "prefix subject:")
- "C-k" '(sfs--prefix-keyword           :wk "prefix keyword:")
- "C-l" '(sfs--prefix-rclcat            :wk "prefix rclcat:")
- "C-m" '(sfs--prefix-mime              :wk "prefix mime:")
- "C-p" '(sfs--prefix-recipient         :wk "prefix recipient:")
- "C-t" '(sfs--prefix-date              :wk "prefix date:")
- "C-z" '(sfs--prefix-size              :wk "prefix size:"))
+(setq  sfs-recollect-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "<S-return>") 'sfs-recollect-at-point)
+    (define-key map "\C-q" 'quit-window)
+    (define-key map "\C-r" 'sfs--record-query)
+    (define-key map "\C-c\C-a"  'sfs--prefix-author)
+    (define-key map "\C-c\C-c" 'sfs--prefix-containerfilename)
+    (define-key map "\C-c\C-d" 'sfs--prefix-dir)
+    (define-key map "\C-c\C-e" 'sfs--prefix-ext)
+    (define-key map "\C-c\C-f" 'sfs--prefix-filename)
+    (define-key map "\C-c\C-i" 'sfs--insert-rec)
+    (define-key map "\C-c\C-j" 'sfs--prefix-subject)
+    (define-key map "\C-c\C-k" 'sfs--prefix-keyword)
+    (define-key map "\C-c\C-l" 'sfs--prefix-rclcat)
+    (define-key map "\C-c\C-m" 'sfs--prefix-mime)
+    (define-key map "\C-c\C-p" 'sfs--prefix-recipient)
+    (define-key map "\C-c\C-t" 'sfs--prefix-date)
+    (define-key map "\C-c\C-z" 'sfs--prefix-size)
+    map))
 (define-derived-mode sfs-recollect-mode org-mode "SFS:rec"
   "Mode for SFS interactive recollections interface."
   (hide-sublevels 2)
