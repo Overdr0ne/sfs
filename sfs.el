@@ -27,17 +27,45 @@
 (require 'sfs-recoll)
 (require 'sfs-tag)
 (require 'sfs-tui)
-(require 'evil-collection-sfs)
 
-(let ((service-filename
-       (concat (file-name-directory load-file-name) "service.py")))
-  (if (file-exists-p service-filename)
-     (start-process
-      "recoll-server"
-      "*recoll-server*"
-      "python3"
-      service-filename)
-   (message "SFS: Couldn't find service.py...")))
+(defvar sfs--initialized-p nil)
+
+(defun sfs--init ()
+  "Starts the SFS services if necessary."
+  (when (not sfs--initialized-p)
+    (let ((service-filename
+           (concat (file-name-directory (file-name-directory (find-library-name "sfs"))) "service.py")))
+      (if (file-exists-p service-filename)
+          (start-process
+           "recoll-server"
+           "*recoll-server*"
+           "python3"
+           service-filename)
+        (message "SFS: Couldn't find service.py...")))
+    (setq sfs--initialized-p t)))
+
+(defun sfs--shutdown ()
+  "Shuts down SFS services when necessary."
+  (when sfs--initialized-p
+    (kill-process "recoll-server")
+    (setq sfs--initialized-p nil)))
+
+(define-minor-mode global-sfs-mode
+  "Toggle global SFS minor mode.
+
+Interactively with no argument, this command toggles the mode.
+A positive prefix argument enables the mode, any other prefix
+argument disables it.  From Lisp, argument omitted or nil enables
+the mode, `toggle' toggles the state.
+
+When enabled, SFS initializes a python server responsible for
+dispatching queries from elisp over dbus, and returning search results."
+  :init-value nil
+  :lighter " SFS"
+  :global t
+  (if global-sfs-mode
+      (sfs--init)
+    (sfs--shutdown)))
 
 (provide 'sfs)
 ;;; sfs.el ends here
