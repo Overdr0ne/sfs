@@ -34,7 +34,7 @@
   "Starts the SFS services if necessary."
   (when (not sfs--initialized-p)
     (let ((service-filename
-           (concat (file-name-directory (file-name-directory (buffer-file-name (find-library "sfs")))) "service.py")))
+           (concat (file-name-directory (file-name-directory (find-library-name "sfs"))) "service.py")))
       (if (file-exists-p service-filename)
           (start-process
            "recoll-server"
@@ -66,7 +66,6 @@ dispatching queries from elisp over dbus, and returning search results."
   (if global-sfs-mode
       (sfs--init)
     (sfs--shutdown)))
-
 
 (provide 'sfs)
 ;;; sfs.el ends here
