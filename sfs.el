@@ -42,7 +42,8 @@
            "python3"
            service-filename)
         (message "SFS: Couldn't find service.py...")))
-    (setq sfs--initialized-p t)))
+    (setq sfs--initialized-p t)
+    (add-hook 'kill-emacs-hook #'sfs--shutdown)))
 
 (defun sfs--shutdown ()
   "Shuts down SFS services when necessary."
