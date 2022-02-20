@@ -45,15 +45,6 @@
 	     (completing-read "Value: " (sfs-tag-collect-vals tag))
              (dired-get-filename)))))
 
-(defun sfs-tag-collect-dump ()
-  "Collect existing tags for file at POINT."
-  (let (attr)
-    (setq attr (-> (format "getfattr --absolute-names -d %s"
-                           (shell-quote-argument (dired-get-filename)))
-                   (shell-command-to-string)))
-    (setq attr (dired-replace-in-string "#.*" "" attr))
-    (split-string attr)))
-
 (defun sfs-tag-get ()
   "Get all tag info for file at POINT using extended attributes."
   (interactive)
