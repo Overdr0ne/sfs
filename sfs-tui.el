@@ -127,9 +127,7 @@ https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.ht
 			     (slot . 0)))
 	    (fit-window-to-buffer)
             (sfs-represent-mode)
-	    (set-window-point (get-buffer-window buffer) 0)
-            ;; (display-buffer buffer)
-	    ))
+	    (set-window-point (get-buffer-window buffer) 0)))
       (message "This file has not been indexed by Recoll..."))))
 
 ;;; Redirectory
@@ -183,22 +181,16 @@ https://www.lesbonscomptes.com/recoll/usermanual/webhelp/docs/RCL.SEARCH.LANG.ht
   "Display a tooltip showing metadata about the file at POINT."
   (interactive)
   (let ((entry (sfs--recoll-file-properties (dired-get-filename))))
-    (popup-tip (sfs--recoll-property-str entry) :point(line-beginning-position))))
+    (popup-tip (sfs--recoll-property-str entry) :point (line-beginning-position))))
 
-(defun sfs-redired-ivy ()
-  "Operate on file metadata at POINT."
+(defun sfs-redired-yank ()
+  "Yank selected metadata for file at POINT."
   (interactive)
-  (let (entry)
-    (setq entry
-          (sfs--recoll-file-properties (dired-get-filename)))
-    (ivy-read "Find Property: " entry
-              :caller 'sfs-recoll-dired-ivy
-              :action
-              #'(lambda (a) (progn)
-                  (kill-new (cdr a))
-                  (print (concat "Entry\n---\n"
-                                 (cdr a)
-                                 "\n---\ncopied to kill-ring."))))))
+  (let* ((metadata (sfs--recoll-file-properties (dired-get-filename)))
+	 (selection (completing-read "Find Property: " metadata))
+	 (value (cadr (assoc selection metadata))))
+    (kill-new value)
+    (message "Yanked \"%s\" to the kill-ring." value)))
 
 ;;; Researcher
 (defvar sfs--query "")

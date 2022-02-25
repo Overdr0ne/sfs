@@ -21,7 +21,6 @@
 ;;; Code:
 
 (require 'dbus)
-(require 'ivy)
 (require 'dired)
 
 (defun sfs--recoll-get-field (field aList)
